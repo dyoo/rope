@@ -106,12 +106,32 @@
      
      (test-case
       "rope-depth and balancing"
-      (check-equal? 1 (rope-depth
-                       (rope-balance (++ "h0" "h1"))))
-      (check-equal? 2 (rope-depth
-                       (rope-balance (++ "h0" (++ "h1" "h2")))))
-      (check-equal? 2 (rope-depth
-                       (rope-balance (++ "h0" (++ "h1" (++ "h2" "h3")))))))))
+      (check-equal? (rope-depth (rope-balance (++ "h0" "h1")))
+                    1)
+      (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" "h2"))))
+                    2)
+      (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" (++ "h2" "h3")))))
+                    2)
+      (check-equal? (rope-depth
+                     (rope-balance
+                      (++ "h0" (++ "h1" (++ "h2" (++ "h3" "h4"))))))
+                    3)
+      (check-equal? (rope-depth
+                     (rope-balance
+                      (++ "h0" (++ "h1" (++ "h2" (++ "h3" (++ "h4" "h5")))))))
+                    3))
+     
+     
+     (test-case
+      "rope-ref"
+      (local ((define word-rope (++
+                                 (++ (++ "super" "cali") (++ "fragil" "istic"))
+                                 (++ "expiali" "docious")))
+              (define word-string "supercalifragilisticexpialidocious"))
+        (for-each (lambda (i ch)
+                    (check-equal? (rope-ref word-rope i) ch))
+                  (build-list (string-length word-string) (lambda (i) i))
+                  (string->list word-string))))))
   
   
   (test/text-ui rope-tests))

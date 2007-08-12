@@ -21,21 +21,23 @@ API
 
 > rope-length
 
-> rope-ref
+> rope-ref: rope natural -> rope
 
-> subrope
+> subrope: rope start [end] -> rope
 
-> rope->string
+> rope->string: rope -> string
 
-> rope-for-each
+> rope-for-each: (char -> void) rope -> void
 
-> rope-fold
+> rope-fold: (char X) X rope -> X
 
-> rope-fold/leaves
+> rope-fold/leaves: (string X) X rope -> X
 
-> rope-balance
+> rope-depth: rope -> natural-number
 
-> open-input-rope
+> rope-balance: rope -> rope
+
+> open-input-rope: rope -> input-port
 
 
 
