@@ -2,8 +2,9 @@
   (require (lib "etc.ss")
            (lib "plt-match.ss")
            (lib "port.ss")
-           (only (lib "13.ss" "srfi") string-fold)
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           (lib "list.ss")
+           (only (lib "13.ss" "srfi") string-fold))
   
   ;; Quick and dirty library implementing ropes, closely following
   ;; the description in: 
@@ -21,7 +22,7 @@
   
   
   ;; A rope is either a flat string, or a rope:concat.
-  (define-struct rope:concat (l r len))
+  (define-struct rope:concat (l r len) #f)
   
   
   ;; rope?: any -> boolean
@@ -69,7 +70,8 @@
             
             (define (below-cutoff? s1 s2)
               (< (+ (string-length s1) (string-length s2))
-                 cutoff-before-concat-node-use))
+                 cutoff-before-concat-node-use)
+              #f)
             
             (define (convert-flats-to-immutable a-rope)
               (cond
@@ -202,6 +204,14 @@
        (rope-fold f (rope-fold f acc l) r)]))
   
   
+  (define (rope-fold/leaves f acc a-rope)
+    (match a-rope
+      [(? string?)
+       (f a-rope acc)]
+      [(struct rope:concat (l r len))
+       (rope-fold/leaves f (rope-fold/leaves f acc l) r)]))
+  
+  
   ;; open-input-rope: rope -> input-port
   ;; Opens an input port using the characters in the rope.
   (define (open-input-rope a-rope)
@@ -211,6 +221,59 @@
       [(struct rope:concat (l r len))
        (input-port-append
         #t (open-input-rope l) (open-input-rope r))]))
+  
+  
+  ;; balance: rope -> rope
+  (define (balance a-rope)
+    (local ((define (add-leaf-to-forest a-leaf a-forest)
+              (display a-leaf)
+              (newline)
+              (cond
+                [(empty? a-forest)
+                 (list a-leaf)]
+                [(< (rope-length (first a-forest))
+                    (rope-length a-leaf))
+                 (cons a-leaf a-forest)]
+                [else
+                 (local
+                     ((define partial-forest
+                        (merge-smaller-children a-forest (rope-length a-leaf))))
+                   (restore-forest-order
+                    (cons (rope-append (first partial-forest) a-leaf)
+                          (rest partial-forest))))]))
+            
+            (define (merge-smaller-children a-forest n)
+              (cond
+                [(empty? (rest a-forest))
+                 a-forest]
+                [(< (rope-length (first a-forest)) n)
+                 (merge-smaller-children
+                  (cons (rope-append (second a-forest) (first a-forest))
+                        (rest (rest a-forest)))
+                  n)]
+                [else
+                 a-forest]))
+            
+            (define (restore-forest-order a-forest)
+              (cond
+                [(empty? (rest a-forest))
+                 a-forest]
+                [(>= (rope-length (first a-forest))
+                     (rope-length (second a-forest)))
+                 (restore-forest-order
+                  (cons (rope-append (second a-forest) (first a-forest))
+                        (rest (rest a-forest))))]
+                [else
+                 a-forest]))
+            
+            (define (concatenate-forest a-forest)
+              (cond
+                [(empty? (rest a-forest)) (first a-forest)]
+                [else
+                 (rope-append (concatenate-forest (rest a-forest))
+                              (first a-forest))])))
+      (concatenate-forest
+       (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
   
   (provide/contract
