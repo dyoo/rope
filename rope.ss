@@ -124,7 +124,7 @@
                       (define right
                         (cond
                           [(and (<= start length-of-rope-1)
-                                (>= end len))
+                                (<= len end))
                            rope-2]
                           [else
                            (subrope rope-2
