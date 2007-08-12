@@ -4,42 +4,121 @@ Danny Yoo (dyoo@cs.wpi.edu / dyoo@hkn.eecs.berkeley.edu)
 
 Index terms: _ropes_
 
+
 Introduction
 ============
+
+This presents a _rope_ data structure which is very much like a
+string, except that it provides constant-time concatenation and
+subsequencing.  It's pretty much what's described in the paper "Ropes:
+an Alternative to Strings" by Boehm, Atkinson, and Plauss.
 
 
 Example
 =======
 
+     > (require (planet "rope.ss" ("dyoo" "rope.plt" 1)))
+     > (define a-rope
+         (rope-append "hello, this is a test of the emergency broadcast"
+                      "system; this is only a test"))
+     > a-rope
+     > #<struct:rope:concat>
+
+     > (rope-length a-rope)
+     75
+     
+      > (subrope a-rope 5)
+      #<struct:rope:concat>
+      > (rope->string (subrope a-rope 5 10))
+      ", thi"
+      > (rope-ref (subrope a-rope 20) 0)
+      #\t
+
 
 API
 ===
 
-> rope?
+A rope is defined to be either:
 
-> rope-append
+   * A string.
+   * A concatenation node.
 
-> rope-length
+All functions that work on ropes will consume either of these.  The
+only way to construct a concatenation node is with rope-append.
 
-> rope-ref: rope natural -> rope
+
+> rope?: X -> boolean
+
+Returns true if the input is a rope.
+
+
+> rope-append: rope rope -> rope
+
+Joins two ropes together in constant time.
+
+
+> rope-length: rope -> natural-number
+
+Returns the length of a rope.
+
+
+> rope-ref: rope natural -> char
+
+Returns the nth character of a rope.
+
 
 > subrope: rope start [end] -> rope
 
+Returns a subsequence of the rope containing all the character from
+start up to (but not including) the end.  If the end is not provided,
+then the subrope extends to the end of the rope.
+
+
 > rope->string: rope -> string
+
+Creates a string from the content in the rope.
+
 
 > rope-for-each: (char -> void) rope -> void
 
+Applies the input function on every character in the rope.
+
+
 > rope-fold: (char X) X rope -> X
+
+Folds an accumulating function across every character in the rope.
+
 
 > rope-fold/leaves: (string X) X rope -> X
 
+Folds an accumulating function across every chunk of string in the rope.
+
+
 > rope-depth: rope -> natural-number
+
+Returns the depth of the rope data structure.
+
 
 > rope-balance: rope -> rope
 
+Returns a balanced version of the rope with logarithmic height.
+
+
 > open-input-rope: rope -> input-port
 
+Returns an input port whose byte content comes from the rope.
 
+
+
+Notes
+=====
+
+Unlike the description in the paper, this library does not
+automatically rebalance the data structure when applying subrope or
+rope-append.  Call it explicitly if you expect to do a lot of lookups.
+
+The operations are done without mutation, so this data structure
+should be thread-safe.
 
 
 
@@ -47,4 +126,5 @@ References
 ==========
 
 Hans-Juergen Boehm and Russell R. Atkinson and Michael F. Plass.
-"Ropes: an Alternative to Strings."  Software - Practice and Experience, Volume 25, No. 12.  pp 1315--1330.  (1995).
+"Ropes: an Alternative to Strings."  Software - Practice and
+Experience, Volume 25, No. 12.  pp 1315--1330.  (1995).
