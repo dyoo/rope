@@ -107,40 +107,49 @@
     (local ((define (subrope a-rope start end)
               (match a-rope
                 [(? string?)
-                 (cond
-                   [(<= start end)
-                    (substring a-rope start end)]
-                   [else
-                    ""])]
+                 (substring a-rope start end)]
+                
                 [(struct rope:concat (rope-1 rope-2 len))
                  (local
-                     ((define left
+                     ((define length-of-rope-1 (rope-length rope-1))
+                      (define left
                         (cond
                           [(and (<= start 0)
-                                (< (rope-length rope-1) end))
+                                (< length-of-rope-1 end))
                            rope-1]
                           [else
-                           (subrope rope-1 start
-                                    (min end (rope-length rope-1)))]))
+                           (subrope rope-1
+                                    (min start length-of-rope-1)
+                                    (min end length-of-rope-1))]))
                       (define right
                         (cond
-                          [(and (<= start (rope-length rope-1))
-                                (>= end (+ (rope-length rope-1)
-                                           (rope-length rope-2))))
+                          [(and (<= start length-of-rope-1)
+                                (>= end len))
                            rope-2]
                           [else
                            (subrope rope-2
-                                    (max 0 (- start
-                                              (rope-length rope-1)))
-                                    (- end (rope-length rope-1)))])))
-                   (rope-append left right))])))
+                                    (max 0
+                                         (- start length-of-rope-1))
+                                    (max 0
+                                         (- end length-of-rope-1)))])))
+                   (rope-append left right))]))
+            
+            (define (clamp x low high)
+              (min (max x low) high)))
+      
       (case-lambda
         [(a-rope start)
-         (subrope a-rope start (rope-length a-rope))]
-        [(a-rope start end)
          (subrope a-rope
-                  (max start 0)
-                  (min end (rope-length a-rope)))])))
+                  (clamp start 0 (rope-length a-rope))
+                  (rope-length a-rope))]
+        [(a-rope start end)
+         (cond [(<= start end)
+                (subrope a-rope
+                         (clamp start 0 (rope-length a-rope))
+                         (clamp end 0 (rope-length a-rope)))]
+               [else
+                ""])])))
+  
   
   
   ;; rope->string: rope -> string
