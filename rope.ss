@@ -117,6 +117,8 @@
                           [(and (<= start 0)
                                 (<= length-of-rope-1 end))
                            rope-1]
+                          [(<= length-of-rope-1 start)
+                           ""]
                           [else
                            (subrope rope-1
                                     (min start length-of-rope-1)
@@ -126,6 +128,8 @@
                           [(and (<= start length-of-rope-1)
                                 (<= len end))
                            rope-2]
+                          [(<= end length-of-rope-1)
+                           ""]
                           [else
                            (subrope rope-2
                                     (max 0 (- start length-of-rope-1))
