@@ -223,16 +223,16 @@
         #t (open-input-rope l) (open-input-rope r))]))
   
   
-  ;; balance: rope -> rope
-  (define (balance a-rope)
+  ;; rope-balance: rope -> rope
+  ;; A fast-and-loose adaptation of the balancing algorithm described
+  ;; in the paper.
+  (define (rope-balance a-rope)
     (local ((define (add-leaf-to-forest a-leaf a-forest)
-              (display a-leaf)
-              (newline)
               (cond
                 [(empty? a-forest)
                  (list a-leaf)]
-                [(< (rope-length (first a-forest))
-                    (rope-length a-leaf))
+                [(< (rope-length a-leaf)
+                    (rope-length (first a-forest)))
                  (cons a-leaf a-forest)]
                 [else
                  (local
@@ -247,12 +247,12 @@
                 [(empty? (rest a-forest))
                  a-forest]
                 [(< (rope-length (first a-forest)) n)
+                 a-forest]
+                [else
                  (merge-smaller-children
                   (cons (rope-append (second a-forest) (first a-forest))
                         (rest (rest a-forest)))
-                  n)]
-                [else
-                 a-forest]))
+                  n)]))
             
             (define (restore-forest-order a-forest)
               (cond
@@ -268,7 +268,8 @@
             
             (define (concatenate-forest a-forest)
               (cond
-                [(empty? (rest a-forest)) (first a-forest)]
+                [(empty? (rest a-forest))
+                 (first a-forest)]
                 [else
                  (rope-append (concatenate-forest (rest a-forest))
                               (first a-forest))])))
@@ -278,6 +279,7 @@
   
   (provide/contract
    [rope? (any/c . -> . boolean?)]
+   [rope-balance (rope? . -> . rope?)]
    [rope-append (rope? rope? . -> . rope?)]
    [rope-length (rope? . -> . natural-number/c)]
    [rope-ref (rope? natural-number/c . -> . char?)]
