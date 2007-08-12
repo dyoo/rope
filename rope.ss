@@ -115,7 +115,7 @@
                       (define left
                         (cond
                           [(and (<= start 0)
-                                (< length-of-rope-1 end))
+                                (<= length-of-rope-1 end))
                            rope-1]
                           [else
                            (subrope rope-1
@@ -128,10 +128,8 @@
                            rope-2]
                           [else
                            (subrope rope-2
-                                    (max 0
-                                         (- start length-of-rope-1))
-                                    (max 0
-                                         (- end length-of-rope-1)))])))
+                                    (max 0 (- start length-of-rope-1))
+                                    (max 0 (- end length-of-rope-1)))])))
                    (rope-append left right))]))
             
             (define (clamp x low high)
@@ -148,7 +146,7 @@
                          (clamp start 0 (rope-length a-rope))
                          (clamp end 0 (rope-length a-rope)))]
                [else
-                ""])])))
+                (error 'subrope "end greater than start" start end)])])))
   
   
   
