@@ -37,9 +37,9 @@
   (define cutoff 32)
   
   
-  ;; rope-concat: rope rope -> rope
+  ;; rope-append: rope rope -> rope
   ;; Puts two ropes together.
-  (define (rope-concat rope-1 rope-2)
+  (define (rope-append rope-1 rope-2)
     (local ((define l1 (rope-length rope-1))
             (define l2 (rope-length rope-2))
             
@@ -103,36 +103,44 @@
   ;; subrope: rope number number -> rope
   ;; Takes a subsequence of the rope from start,
   ;; up to (but not including) end.
-  (define (subrope a-rope start end)
-    (match a-rope
-      [(? string?)
-       (cond
-         [(<= start end)
-          (substring a-rope
-                     (max start 0)
-                     (min end (string-length a-rope)))]
-         [else
-          ""])]
-      [(struct rope:concat (rope-1 rope-2 len))
-       (local ((define left
+  (define subrope
+    (local ((define (subrope a-rope start end)
+              (match a-rope
+                [(? string?)
                  (cond
-                   [(and (<= start 0)
-                         (< (rope-length rope-1) end))
-                    rope-1]
+                   [(<= start end)
+                    (substring a-rope start end)]
                    [else
-                    (subrope rope-1 start
-                             (min end (rope-length rope-1)))]))
-               (define right
-                 (cond
-                   [(and (<= start (rope-length rope-1))
-                         (>= (+ start (- end start))
-                             (+ (rope-length rope-1)
-                                (rope-length rope-2))))
-                    rope-2]
-                   [else
-                    (subrope rope-2 (- start (rope-length rope-1))
-                             (- end (rope-length left)))])))
-         (rope-concat left right))]))
+                    ""])]
+                [(struct rope:concat (rope-1 rope-2 len))
+                 (local
+                     ((define left
+                        (cond
+                          [(and (<= start 0)
+                                (< (rope-length rope-1) end))
+                           rope-1]
+                          [else
+                           (subrope rope-1 start
+                                    (min end (rope-length rope-1)))]))
+                      (define right
+                        (cond
+                          [(and (<= start (rope-length rope-1))
+                                (>= end (+ (rope-length rope-1)
+                                           (rope-length rope-2))))
+                           rope-2]
+                          [else
+                           (subrope rope-2
+                                    (max 0 (- start
+                                              (rope-length rope-1)))
+                                    (- end (rope-length rope-1)))])))
+                   (rope-append left right))])))
+      (case-lambda
+        [(a-rope start)
+         (subrope a-rope start (rope-length a-rope))]
+        [(a-rope start end)
+         (subrope a-rope
+                  (max start 0)
+                  (min end (rope-length a-rope)))])))
   
   
   ;; rope->string: rope -> string
@@ -175,10 +183,12 @@
   
   (provide/contract
    [rope? (any/c . -> . boolean?)]
-   [rope-concat (rope? rope? . -> . rope?)]
+   [rope-append (rope? rope? . -> . rope?)]
    [rope-length (rope? . -> . natural-number/c)]
    [rope-ref (rope? natural-number/c . -> . char?)]
-   [subrope (rope? natural-number/c natural-number/c . -> . rope?)]
+   [subrope (case->
+             (rope? natural-number/c natural-number/c . -> . rope?)
+             (rope? natural-number/c . -> . rope?))]
    [rope->string (rope? . -> . string?)]
    [rope-for-each ((char? . -> . any) rope? . -> . any)]
    [rope-fold ((char? any/c . -> . any) any/c rope? . -> . any)]
