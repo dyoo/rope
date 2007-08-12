@@ -22,7 +22,7 @@
   
   
   ;; A rope is either a flat string, or a rope:concat.
-  (define-struct rope:concat (l r len) #f)
+  (define-struct rope:concat (l r len))
   
   
   ;; rope?: any -> boolean
