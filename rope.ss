@@ -16,7 +16,6 @@
   
   
   ;; TODO: implement rebalancing
-  ;; TODO: optimize concatenation of simple characters to the end
   ;; TODO: test cases
   ;; TODO: documentation
   
@@ -32,9 +31,20 @@
         (rope:concat? a-datum)))
   
   
+  ;; immutable-string-append: string string -> immutable-string
+  (define (immutable-string-append s1 s2)
+    (string->immutable-string (string-append s1 s2)))
+  
+  
+  ;; immutable-substring: string number number -> immutable-string
+  (define (immutable-substring a-str start end)
+    (string->immutable-string
+     (substring a-str start end)))
+  
+  
   ;; Arbitrary length cutoff until we allocate a new concat node
   ;; TODO: experiment to see what value is good for this.
-  (define cutoff 32)
+  (define cutoff-before-concat-node-use 32)
   
   
   ;; rope-append: rope rope -> rope
@@ -44,17 +54,14 @@
             (define l2 (rope-length rope-2))
             
             (define (below-cutoff? s1 s2)
-              (< (+ (string-length s1)
-                    (string-length s2)) cutoff))
+              (< (+ (string-length s1) (string-length s2))
+                 cutoff-before-concat-node-use))
             
             (define (convert-flats-to-immutable a-rope)
               (cond
                 [(string? a-rope)
                  (string->immutable-string a-rope)]
-                [else a-rope]))
-            
-            (define (immutable-string-append s1 s2)
-              (string->immutable-string (string-append s1 s2))))
+                [else a-rope])))
       (cond
         [(and (string? rope-1) (string? rope-2)
               (below-cutoff? rope-1 rope-2))
@@ -107,7 +114,7 @@
     (local ((define (subrope a-rope start end)
               (match a-rope
                 [(? string?)
-                 (substring a-rope start end)]
+                 (immutable-substring a-rope start end)]
                 
                 [(struct rope:concat (rope-1 rope-2 len))
                  (local
