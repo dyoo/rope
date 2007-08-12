@@ -246,7 +246,7 @@
               (cond
                 [(empty? (rest a-forest))
                  a-forest]
-                [(< (rope-length (first a-forest)) n)
+                [(<= (rope-length (first a-forest)) n)
                  a-forest]
                 [else
                  (merge-smaller-children
