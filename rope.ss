@@ -16,11 +16,6 @@
   ;;
   
   
-  ;; TODO: implement rebalancing
-  ;; TODO: test cases
-  ;; TODO: documentation
-  
-  
   ;; A rope is either a flat string, or a rope:concat.
   (define-struct rope:concat (l r len))
   
@@ -60,6 +55,12 @@
   ;; Arbitrary length cutoff until we allocate a new concat node
   ;; TODO: experiment to see what value is good for this.
   (define cutoff-before-concat-node-use 32)
+  (define (below-flat-collapsing-cutoff? s1 s2)
+    (and (current-optimize-flat-ropes)
+         (< (+ (string-length s1) (string-length s2))
+            cutoff-before-concat-node-use)))
+  (define current-optimize-flat-ropes (make-parameter #t))
+  
   
   
   ;; rope-append: rope rope -> rope
@@ -68,10 +69,6 @@
     (local ((define l1 (rope-length rope-1))
             (define l2 (rope-length rope-2))
             
-            (define (below-cutoff? s1 s2)
-              (< (+ (string-length s1) (string-length s2))
-                 cutoff-before-concat-node-use))
-            
             (define (convert-flats-to-immutable a-rope)
               (cond
                 [(string? a-rope)
@@ -79,13 +76,13 @@
                 [else a-rope])))
       (cond
         [(and (string? rope-1) (string? rope-2)
-              (below-cutoff? rope-1 rope-2))
+              (below-flat-collapsing-cutoff? rope-1 rope-2))
          (immutable-string-append rope-1 rope-2)]
         
         [(and (rope:concat? rope-1)
               (string? (rope:concat-r rope-1))
               (string? rope-2)
-              (below-cutoff? (rope:concat-r rope-1) rope-2))
+              (below-flat-collapsing-cutoff? (rope:concat-r rope-1) rope-2))
          (make-rope:concat (rope:concat-l rope-1)
                            (immutable-string-append
                             (rope:concat-r rope-1) rope-2)
@@ -286,6 +283,8 @@
             (add1 (rope-depth r)))]))
   
   
+  
+  (provide current-optimize-flat-ropes)
   (provide/contract
    [rope? (any/c . -> . boolean?)]
    

@@ -73,65 +73,74 @@
      
      (test-case
       "balance"
-      (check-equal? "abcdef"
-                    (rope->string (rope-balance (++ "a" (++ "bc" (++ "d" "ef"))))))
-      (check-equal? (rope-depth (rope-balance (++ "a" (++ "bc" (++ "d" "ef")))))
-                    2))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (check-equal? "abcdef"
+                      (rope->string
+                       (rope-balance (++ "a" (++ "bc" (++ "d" "ef"))))))
+        (check-equal? (rope-depth
+                       (rope-balance (++ "a" (++ "bc" (++ "d" "ef")))))
+                      2)))
      
      (test-case
       "rope-fold/leaves"
-      (check-equal? (rope-fold/leaves (lambda (a-str acc)
-                                        (cons a-str acc))
-                                      '()
-                                      (++ "hello" "world"))
-                    (list "world" "hello")))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (check-equal? (rope-fold/leaves (lambda (a-str acc)
+                                          (cons a-str acc))
+                                        '()
+                                        (++ "hello" "world"))
+                      (list "world" "hello"))))
      
      
      (test-case
       "rope-fold"
-      (check-equal? (rope-fold (lambda (a-str acc)
-                                 (cons a-str acc))
-                               '()
-                               (++ "hello" "world"))
-                    (reverse (list #\h #\e #\l #\l #\o #\w #\o #\r #\l #\d))))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (check-equal? (rope-fold (lambda (a-str acc)
+                                   (cons a-str acc))
+                                 '()
+                                 (++ "hello" "world"))
+                      (reverse (list #\h #\e #\l #\l #\o #\w #\o #\r #\l #\d)))))
+     
      
      (test-case
       "open-input-rope"
-      (check-equal?
-       (regexp-match
-        "abracadabra"
-        (open-input-rope (++ "a" (++ "braca" (++ (++ "da" "br") "a")))))
-       '(#"abracadabra")))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (check-equal?
+         (regexp-match
+          "abracadabra"
+          (open-input-rope (++ "a" (++ "braca" (++ (++ "da" "br") "a")))))
+         '(#"abracadabra"))))
      
      
      (test-case
       "rope-depth and balancing"
-      (check-equal? (rope-depth (rope-balance (++ "h0" "h1")))
-                    1)
-      (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" "h2"))))
-                    2)
-      (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" (++ "h2" "h3")))))
-                    2)
-      (check-equal? (rope-depth
-                     (rope-balance
-                      (++ "h0" (++ "h1" (++ "h2" (++ "h3" "h4"))))))
-                    3)
-      (check-equal? (rope-depth
-                     (rope-balance
-                      (++ "h0" (++ "h1" (++ "h2" (++ "h3" (++ "h4" "h5")))))))
-                    3))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (check-equal? (rope-depth (rope-balance (++ "h0" "h1")))
+                      1)
+        (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" "h2"))))
+                      2)
+        (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" (++ "h2" "h3")))))
+                      2)
+        (check-equal? (rope-depth
+                       (rope-balance
+                        (++ "h0" (++ "h1" (++ "h2" (++ "h3" "h4"))))))
+                      3)
+        (check-equal? (rope-depth
+                       (rope-balance
+                        (++ "h0" (++ "h1" (++ "h2" (++ "h3" (++ "h4" "h5")))))))
+                      3)))
      
      
      (test-case
       "rope-ref"
-      (local ((define word-rope (++
-                                 (++ (++ "super" "cali") (++ "fragil" "istic"))
-                                 (++ "expiali" "docious")))
-              (define word-string "supercalifragilisticexpialidocious"))
-        (for-each (lambda (i ch)
-                    (check-equal? (rope-ref word-rope i) ch))
-                  (build-list (string-length word-string) (lambda (i) i))
-                  (string->list word-string))))))
+      (parameterize ([current-optimize-flat-ropes #f])
+        (local ((define word-rope (++
+                                   (++ (++ "super" "cali") (++ "fragil" "istic"))
+                                   (++ "expiali" "docious")))
+                (define word-string "supercalifragilisticexpialidocious"))
+          (for-each (lambda (i ch)
+                      (check-equal? (rope-ref word-rope i) ch))
+                    (build-list (string-length word-string) (lambda (i) i))
+                    (string->list word-string)))))))
   
   
   (test/text-ui rope-tests))
