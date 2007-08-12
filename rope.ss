@@ -271,22 +271,39 @@
                 [(empty? (rest a-forest))
                  (first a-forest)]
                 [else
-                 (rope-append (concatenate-forest (rest a-forest))
-                              (first a-forest))])))
+                 (concatenate-forest
+                  (cons (rope-append (second a-forest) (first a-forest))
+                        (rest (rest a-forest))))])))
       (concatenate-forest
        (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
   
+  (define (rope-depth a-rope)
+    (match a-rope
+      [(? string?)
+       0]
+      [(struct rope:concat (l r len))
+       (max (add1 (rope-depth l))
+            (add1 (rope-depth r)))]))
+  
+  
   (provide/contract
    [rope? (any/c . -> . boolean?)]
-   [rope-balance (rope? . -> . rope?)]
+   
    [rope-append (rope? rope? . -> . rope?)]
    [rope-length (rope? . -> . natural-number/c)]
    [rope-ref (rope? natural-number/c . -> . char?)]
    [subrope (case->
              (rope? natural-number/c natural-number/c . -> . rope?)
              (rope? natural-number/c . -> . rope?))]
+   
    [rope->string (rope? . -> . string?)]
+   
    [rope-for-each ((char? . -> . any) rope? . -> . any)]
    [rope-fold ((char? any/c . -> . any) any/c rope? . -> . any)]
+   [rope-fold/leaves ((string? any/c . -> . any) any/c rope? . -> . any)]
+   
+   [rope-balance (rope? . -> . rope?)]
+   [rope-depth (rope? . -> . natural-number/c)]
+   
    [open-input-rope (rope? . -> . input-port?)]))

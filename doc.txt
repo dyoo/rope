@@ -14,3 +14,35 @@ Example
 
 API
 ===
+
+> rope?
+
+> rope-append
+
+> rope-length
+
+> rope-ref
+
+> subrope
+
+> rope->string
+
+> rope-for-each
+
+> rope-fold
+
+> rope-fold/leaves
+
+> rope-balance
+
+> open-input-rope
+
+
+
+
+
+References
+==========
+
+Hans-Juergen Boehm and Russell R. Atkinson and Michael F. Plass.
+"Ropes: an Alternative to Strings."  Software - Practice and Experience, Volume 25, No. 12.  pp 1315--1330.  (1995).
