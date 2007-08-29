@@ -62,6 +62,20 @@
   (define current-optimize-flat-ropes (make-parameter #t))
   
   
+  ;; string->rope: string -> rope
+  ;; Given a string, returns a rope.
+  (define (string->rope a-str)
+    (rope-balance
+     (let loop ([i 0])
+       (cond
+         [(< (+ i cutoff-before-concat-node-use)
+             (string-length a-str))
+          (rope-append
+           (substring a-str i (+ i cutoff-before-concat-node-use))
+           (loop (+ i cutoff-before-concat-node-use)))]
+         [else
+          (substring a-str i)]))))
+  
   
   ;; rope-append: rope rope -> rope
   ;; Puts two ropes together.
@@ -273,7 +287,7 @@
       (concatenate-forest
        (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
-  
+  ;; rope-depth: rope -> natural-number
   (define (rope-depth a-rope)
     (match a-rope
       [(? string?)
@@ -281,6 +295,18 @@
       [(struct rope:concat (l r len))
        (max (add1 (rope-depth l))
             (add1 (rope-depth r)))]))
+  
+  
+  ;; rope-node-count: rope -> natural-number
+  ;; Counts how many nodes (both leaves and concat nodes) are in the rope.
+  ;; Just for debugging.
+  (define (rope-node-count a-rope)
+    (match a-rope
+      [(? string?)
+       1]
+      [(struct rope:concat (l r len))
+       (add1 (+ (rope-node-count l)
+                (rope-node-count r)))]))
   
   
   
@@ -296,6 +322,7 @@
              (rope? natural-number/c . -> . rope?))]
    
    [rope->string (rope? . -> . string?)]
+   [string->rope (string? . -> . rope?)]
    
    [rope-for-each ((char? . -> . any) rope? . -> . any)]
    [rope-fold ((char? any/c . -> . any) any/c rope? . -> . any)]

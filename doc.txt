@@ -79,6 +79,12 @@ then the subrope extends to the end of the rope.
 Creates a string from the content in the rope.
 
 
+> string->rope: string -> rope
+
+Given a long string, breaks it up into smaller rope fragments and appends
+them all together.  The resulting rope is balanced.
+
+
 > rope-for-each: (char -> void) rope -> void
 
 Applies the input function on every character in the rope.
