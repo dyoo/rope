@@ -9,9 +9,10 @@ Introduction
 ============
 
 This presents a _rope_ data structure which is very much like a
-string, except that it provides constant-time concatenation and
-subsequencing.  It's pretty much what's described in the paper "Ropes:
-an Alternative to Strings" by Boehm, Atkinson, and Plauss.
+string, except that it provides constant-time concatenation, as well
+as inexpensive subsequencing.  It's pretty much what's described in
+the paper "Ropes: an Alternative to Strings" by Boehm, Atkinson, and
+Plauss.
 
 
 Example
@@ -43,8 +44,11 @@ A rope is defined to be either:
    * A string.
    * A concatenation node.
 
-All functions that work on ropes will consume either of these.  The
-only way to construct a concatenation node is with rope-append.
+All functions that work on ropes will consume either of these.  But
+try to use string->rope to convert strings to ropes: for short
+strings, it should make no difference, but for larger strings, it may
+partition the string into concatenation nodes for more effective
+subsequencing.
 
 
 > rope?: X -> boolean
