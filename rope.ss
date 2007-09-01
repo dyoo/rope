@@ -76,6 +76,16 @@
       [(struct rope:concat (l r len))
        len]))
   
+  ;; rope-has-special? rope -> boolean
+  ;; Returns true if the rope has a special.
+  (define (rope-has-special? a-rope)
+    (match a-rope
+      [(struct rope:string (s)) #f]
+      [(struct rope:special (s)) #t]
+      [(struct rope:concat (l r len))
+       (or (rope-has-special? l)
+           (rope-has-special? r))]))
+  
   
   ;; rope-append: rope rope -> rope
   ;; Puts two ropes together.
@@ -217,11 +227,12 @@
       [(struct rope:string (s))
        (string-fold f acc s)]
       [(struct rope:special (s))
-       (f acc s)]
+       (f s acc)]
       [(struct rope:concat (l r len))
        (rope-fold f (rope-fold f acc l) r)]))
   
   
+  ;; rope-fold/leaves: (string/special X -> X) X rope -> X
   (define (rope-fold/leaves f acc a-rope)
     (match a-rope
       [(struct rope:string (s))
@@ -340,7 +351,7 @@
   (provide current-optimize-flat-ropes)
   (provide/contract
    [rope? (any/c . -> . boolean?)]
-   
+   [rope-has-special? (rope? . -> . boolean?)]
    [rope-append (rope? rope? . -> . rope?)]
    [rope-length (rope? . -> . natural-number/c)]
    [rope-ref (rope? natural-number/c . -> . any)]
