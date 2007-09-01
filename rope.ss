@@ -16,7 +16,7 @@
   ;; (December 1995)
   ;;
   ;; Slight extension: rope elements are allowed to be non-string
-  ;; data, in which case rope->string can not be applied.
+  ;; special data, in which case rope->string can not be applied.
   
   
   ;; A rope is either a string-node, a special-node, or a rope:concat.
@@ -25,7 +25,7 @@
   (define-struct (rope:special rope) (s))
   (define-struct (rope:concat rope) (l r len))
   
-  ;; A leaf is considered to be a string-node or special-node.
+  ;; A leaf-node is considered to be a string-node or special-node.
   
   
 
@@ -63,6 +63,7 @@
           (make-rope:string
            (immutable-substring a-str i))]))))
   
+  (define special->rope make-rope:special)
   
   ;; rope-length: rope -> number
   ;; Returns the length of a rope
@@ -349,6 +350,7 @@
    
    [rope->string (rope? . -> . string?)]
    [string->rope (string? . -> . rope?)]
+   [special->rope (any/c . -> . rope?)]
    
    [rope-for-each ((any/c . -> . any) rope? . -> . any)]
    [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]

@@ -18,10 +18,12 @@ Plauss.
 Example
 =======
 
-     > (require (planet "rope.ss" ("dyoo" "rope.plt" 1)))
+     > (require (planet "rope.ss" ("dyoo" "rope.plt" 2)))
      > (define a-rope
-         (rope-append (string->rope "hello, this is a test of the emergency broadcast")
-                      (string->rope "system; this is only a test")))
+         (rope-append 
+          (string->rope 
+           "hello, this is a test of the emergency broadcast")
+          (string->rope "system; this is only a test")))
      > a-rope
      > #<struct:rope:concat>
 
