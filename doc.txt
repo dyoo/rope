@@ -70,9 +70,16 @@ fragments and appends them all together.  The resulting
 rope is balanced.
 
 
-> special->rope: any -> rope
+> special->rope: (not string?) -> rope
 
 Creates a rope element of length one whose content is the given element.
+
+Caveat: The special should not be a string.
+If it's necessary to construct and distinguish such a special,
+one workaround is to wrap with a box.
+Rationale: the behavior of rope-fold/leaves becomes ambiguous and
+otherwise wouldn't let a client distinguish between a string and
+a special-as-a-string.
 
 
 > rope-append: rope rope -> rope

@@ -361,7 +361,7 @@
    
    [rope->string (rope? . -> . string?)]
    [string->rope (string? . -> . rope?)]
-   [special->rope (any/c . -> . rope?)]
+   [special->rope ((not/c string?) . -> . rope?)]
    
    [rope-for-each ((any/c . -> . any) rope? . -> . any)]
    [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]
