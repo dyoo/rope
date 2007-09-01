@@ -14,6 +14,8 @@
   ;; Software --- Practice and Experience, Vol 25(12), 1315-1330.
   ;; (December 1995)
   ;;
+  ;; Slight extension: rope elements are allowed to be non-string
+  ;; data, in which case rope->string can not be applied.
   
   
   ;; A rope is either a flat string, or a rope:concat.
@@ -316,7 +318,7 @@
    
    [rope-append (rope? rope? . -> . rope?)]
    [rope-length (rope? . -> . natural-number/c)]
-   [rope-ref (rope? natural-number/c . -> . char?)]
+   [rope-ref (rope? natural-number/c . -> . any)]
    [subrope (case->
              (rope? natural-number/c natural-number/c . -> . rope?)
              (rope? natural-number/c . -> . rope?))]
@@ -324,9 +326,9 @@
    [rope->string (rope? . -> . string?)]
    [string->rope (string? . -> . rope?)]
    
-   [rope-for-each ((char? . -> . any) rope? . -> . any)]
-   [rope-fold ((char? any/c . -> . any) any/c rope? . -> . any)]
-   [rope-fold/leaves ((string? any/c . -> . any) any/c rope? . -> . any)]
+   [rope-for-each ((any/c . -> . any) rope? . -> . any)]
+   [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]
+   [rope-fold/leaves ((any/c any/c . -> . any) any/c rope? . -> . any)]
    
    [rope-balance (rope? . -> . rope?)]
    [rope-depth (rope? . -> . natural-number/c)]

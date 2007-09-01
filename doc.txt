@@ -20,8 +20,8 @@ Example
 
      > (require (planet "rope.ss" ("dyoo" "rope.plt" 1)))
      > (define a-rope
-         (rope-append "hello, this is a test of the emergency broadcast"
-                      "system; this is only a test"))
+         (rope-append (string->rope "hello, this is a test of the emergency broadcast")
+                      (string->rope "system; this is only a test")))
      > a-rope
      > #<struct:rope:concat>
 
@@ -41,17 +41,16 @@ API
 
 A rope is defined to be either:
 
-   * A string.
-   * A concatenation node.
+   * A string node,
+   * A special node, or
+   * A concatenation node made of a left rope and a right rope.
 
-All functions that work on ropes will consume either of these.  But
-try to use string->rope to convert strings to ropes: for short
-strings, it should make no difference, but for larger strings, it may
-partition the string into concatenation nodes for more effective
-subsequencing.
+Use string->rope and special->rope to convert those types to
+their respective rope values.  Concatenation nodes are built
+with rope-append.
 
 
-> rope?: X -> boolean
+> rope?: any -> boolean
 
 Returns true if the input is a rope.
 
@@ -82,6 +81,8 @@ then the subrope extends to the end of the rope.
 
 Creates a string from the content in the rope.
 
+NOTE: if the rope contains special nodes, this function will raise an error.
+
 
 > string->rope: string -> rope
 
@@ -89,19 +90,37 @@ Given a long string, breaks it up into smaller rope fragments and appends
 them all together.  The resulting rope is balanced.
 
 
-> rope-for-each: (char -> void) rope -> void
+> special->rope: any -> rope
 
-Applies the input function on every character in the rope.
-
-
-> rope-fold: (char X) X rope -> X
-
-Folds an accumulating function across every character in the rope.
+Creates a rope element of length one whose content is the given element.
 
 
-> rope-fold/leaves: (string X) X rope -> X
+> rope-for-each: (char-or-special -> void) rope [start] -> void
 
-Folds an accumulating function across every chunk of string in the rope.
+Applies the input function on every character or special in the rope, starting
+from the start index (which defaults to zero.)
+
+
+> rope-fold: (char-or-special X) X rope [start] -> X
+
+Folds an accumulating function across every character or special in the rope,
+starting from the start index (which defaults to zero.)
+
+
+> rope-fold/leaves: (immutable-string-or-special X) X rope [start] -> X
+
+Folds an accumulating function across every chunk of string or special in the rope,
+starting from the start index (which defaults to zero.)
+
+
+> open-input-rope: rope -> input-port
+
+Returns an input port whose byte content comes from the rope.
+(FIXME: how do we accomodate specials?)
+
+
+Other API functions
+===================
 
 
 > rope-depth: rope -> natural-number
@@ -109,14 +128,15 @@ Folds an accumulating function across every chunk of string in the rope.
 Returns the depth of the rope data structure.
 
 
+> rope-count-nodes: rope -> natural-number
+
+Returns the number of nodes in the rope.
+
+
 > rope-balance: rope -> rope
 
 Returns a balanced version of the rope with logarithmic height.
 
-
-> open-input-rope: rope -> input-port
-
-Returns an input port whose byte content comes from the rope.
 
 
 
@@ -125,10 +145,17 @@ Notes
 
 Unlike the description in the paper, this library does not
 automatically rebalance the data structure when applying subrope or
-rope-append.  Call it explicitly if you expect to do a lot of lookups.
+rope-append.  Explicit rebalancing may improve the performance of subsequencing and referenceing
+on the rebalanced tree.
 
-The operations are done without mutation, so this data structure
-should be thread-safe.
+All operations are done without mutation.
+
+
+
+Recent changes
+==============
+
+2007/09/01: library API extended to support "special" objects.
 
 
 
