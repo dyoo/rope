@@ -4,7 +4,8 @@
            (lib "port.ss")
            (lib "contract.ss")
            (lib "list.ss")
-           (only (lib "13.ss" "srfi") string-fold))
+           (only (lib "13.ss" "srfi") string-fold)
+           "immutable-string.ss")
   
   ;; Quick and dirty library implementing ropes, closely following
   ;; the description in: 
@@ -18,49 +19,30 @@
   ;; data, in which case rope->string can not be applied.
   
   
-  ;; A rope is either a flat string, or a rope:concat.
-  (define-struct rope:concat (l r len))
+  ;; A rope is either a string-node, a special-node, or a rope:concat.
+  (define-struct rope ())
+  (define-struct (rope:string rope) (s))
+  (define-struct (rope:special rope) (s))
+  (define-struct (rope:concat rope) (l r len))
+  
+  ;; A leaf is considered to be a string-node or special-node.
   
   
-  ;; rope?: any -> boolean
-  ;; Returns true if a-datum is a rope.
-  (define (rope? a-datum)
-    (or (string? a-datum)
-        (rope:concat? a-datum)))
-  
-  
-  ;; immutable-string-append: string string -> immutable-string
-  ;; Appends two strings together, ensuring the result is an
-  ;; immutable string.
-  (define (immutable-string-append s1 s2)
-    (cond
-      [(= (string-length s1) 0)
-       (string->immutable-string s2)]
-      [(= (string-length s2) 0)
-       (string->immutable-string s1)]
-      [else
-       (string->immutable-string (string-append s1 s2))]))
-  
-  
-  ;; immutable-substring: string number number -> immutable-string
-  ;; Gets the substring of a-str, ensuring the result is an
-  ;; immutable string.
-  (define (immutable-substring a-str start end)
-    (cond
-      [(and (= 0 start) (= end (string-length a-str)))
-       (string->immutable-string a-str)]
-      [else
-       (string->immutable-string
-        (substring a-str start end))]))
-  
+
   
   ;; Arbitrary length cutoff until we allocate a new concat node
   ;; TODO: experiment to see what value is good for this.
   (define cutoff-before-concat-node-use 32)
+
+  ;; below-flat-collapsing-cutoff?: string string -> boolean
   (define (below-flat-collapsing-cutoff? s1 s2)
     (and (current-optimize-flat-ropes)
          (< (+ (string-length s1) (string-length s2))
             cutoff-before-concat-node-use)))
+
+  ;; Currently undocumented, but if current-optimize-flat-ropes
+  ;; is off, then we won't try to optimize the appending of
+  ;; consecutive string nodes.
   (define current-optimize-flat-ropes (make-parameter #t))
   
   
@@ -73,10 +55,25 @@
          [(< (+ i cutoff-before-concat-node-use)
              (string-length a-str))
           (rope-append
-           (substring a-str i (+ i cutoff-before-concat-node-use))
+           (make-rope:string
+            (immutable-substring
+             a-str i (+ i cutoff-before-concat-node-use)))
            (loop (+ i cutoff-before-concat-node-use)))]
          [else
-          (substring a-str i)]))))
+          (make-rope:string
+           (immutable-substring a-str i))]))))
+  
+  
+  ;; rope-length: rope -> number
+  ;; Returns the length of a rope
+  (define (rope-length a-rope)
+    (match a-rope
+      [(struct rope:string (s))
+       (string-length s)]
+      [(struct rope:special (s))
+       1]
+      [(struct rope:concat (l r len))
+       len]))
   
   
   ;; rope-append: rope rope -> rope
@@ -84,48 +81,45 @@
   (define (rope-append rope-1 rope-2)
     (local ((define l1 (rope-length rope-1))
             (define l2 (rope-length rope-2))
-            
-            (define (convert-flats-to-immutable a-rope)
-              (cond
-                [(string? a-rope)
-                 (string->immutable-string a-rope)]
-                [else a-rope])))
-      (cond
-        [(and (string? rope-1) (string? rope-2)
-              (below-flat-collapsing-cutoff? rope-1 rope-2))
-         (immutable-string-append rope-1 rope-2)]
+            (define (make-default-concat r1 r2)
+              (make-rope:concat r1 r2 (+ (rope-length r1)
+                                         (rope-length r2)))))
+      (match (list rope-1 rope-2)
+        [(list (struct rope:string (s1))
+               (struct rope:string (s2)))
+         (cond
+           [(below-flat-collapsing-cutoff? s1 s2)
+            (make-rope:string (immutable-string-append s1 s2))]
+           [else
+            (make-default-concat rope-1 rope-2)])]
         
-        [(and (rope:concat? rope-1)
-              (string? (rope:concat-r rope-1))
-              (string? rope-2)
-              (below-flat-collapsing-cutoff? (rope:concat-r rope-1) rope-2))
-         (make-rope:concat (rope:concat-l rope-1)
-                           (immutable-string-append
-                            (rope:concat-r rope-1) rope-2)
-                           (+ l1 l2))]
+        [(list (struct rope:concat
+                       (left-rope
+                        (struct rope:string (s1))
+                        len))
+               (struct rope:string (s2)))
+         (cond
+           [(below-flat-collapsing-cutoff? s1 s2)
+            (make-rope:concat
+             left-rope
+             (make-rope:string (immutable-string-append s1 s2))
+             (+ l1 l2))]
+           [else
+            (make-default-concat rope-1 rope-2)])]
         
         [else
-         (make-rope:concat (convert-flats-to-immutable rope-1)
-                           (convert-flats-to-immutable rope-2)
-                           (+ l1 l2))])))
+         (make-default-concat rope-1 rope-2)])))
   
-  
-  ;; rope-length: rope -> number
-  ;; Returns the length of a rope
-  (define (rope-length a-rope)
-    (match a-rope
-      [(? string?)
-       (string-length a-rope)]
-      [(struct rope:concat (l r len))
-       len]))
   
   
   ;; rope-ref: rope number -> character
   ;; Gets the nth character of a-rope.
   (define (rope-ref a-rope index)
     (match a-rope
-      [(? string?)
-       (string-ref a-rope index)]
+      [(struct rope:string (s))
+       (string-ref s index)]
+      [(struct rope:special (s))
+       s]
       [(struct rope:concat (l r len))
        (local ((define l-length (rope-length l)))
          (cond
@@ -141,8 +135,12 @@
   (define subrope
     (local ((define (subrope a-rope start end)
               (match a-rope
-                [(? string?)
-                 (immutable-substring a-rope start end)]
+                [(struct rope:string (s))
+                 (make-rope:string
+                  (immutable-substring s start end))]
+                
+                [(struct rope:special (s))
+                 a-rope]
                 
                 [(struct rope:concat (rope-1 rope-2 len))
                  (local
@@ -153,7 +151,7 @@
                                 (<= length-of-rope-1 end))
                            rope-1]
                           [(<= length-of-rope-1 start)
-                           ""]
+                           (make-rope:string "")]
                           [else
                            (subrope rope-1
                                     (min start length-of-rope-1)
@@ -164,11 +162,12 @@
                                 (<= len end))
                            rope-2]
                           [(<= end length-of-rope-1)
-                           ""]
+                           (make-rope:string "")]
                           [else
                            (subrope rope-2
                                     (max 0 (- start length-of-rope-1))
-                                    (max 0 (- end length-of-rope-1)))])))
+                                    (max 0 (- end
+                                              length-of-rope-1)))])))
                    (rope-append left right))]))
             
             (define (clamp x low high)
@@ -185,7 +184,8 @@
                          (clamp start 0 (rope-length a-rope))
                          (clamp end 0 (rope-length a-rope)))]
                [else
-                (error 'subrope "end greater than start" start end)])])))
+                (error 'subrope
+                       "end greater than start" start end)])])))
   
   
   
@@ -193,11 +193,14 @@
   ;; Gets a string from the rope.
   (define (rope->string a-rope)
     (match a-rope
-      [(? string?)
-       a-rope]
+      [(struct rope:string (s))
+       s]
+      [(struct rope:special (s))
+       (error 'rope->string "rope contains special ~s" s)]
       [(struct rope:concat (l r len))
        (string-append (rope->string l)
                       (rope->string r))]))
+  
   
   ;; rope-for-each: (char -> void) rope -> void
   ;; Iterates a function f across each character in the rope.
@@ -210,16 +213,20 @@
   ;; in the rope.
   (define (rope-fold f acc a-rope)
     (match a-rope
-      [(? string?)
-       (string-fold f acc a-rope)]
+      [(struct rope:string (s))
+       (string-fold f acc s)]
+      [(struct rope:special (s))
+       (f acc s)]
       [(struct rope:concat (l r len))
        (rope-fold f (rope-fold f acc l) r)]))
   
   
   (define (rope-fold/leaves f acc a-rope)
     (match a-rope
-      [(? string?)
-       (f a-rope acc)]
+      [(struct rope:string (s))
+       (f s acc)]
+      [(struct rope:special (s))
+       (f s acc)]
       [(struct rope:concat (l r len))
        (rope-fold/leaves f (rope-fold/leaves f acc l) r)]))
   
@@ -228,8 +235,13 @@
   ;; Opens an input port using the characters in the rope.
   (define (open-input-rope a-rope)
     (match a-rope
-      [(? string?)
-       (open-input-string a-rope)]
+      [(struct rope:string (s))
+       (open-input-string s)]
+      [(struct rope:special (s))
+       (let-values ([(inp outp) (make-pipe-with-specials)])
+         (write-special s outp)
+         (close-output-port outp)
+         inp)]
       [(struct rope:concat (l r len))
        (input-port-append
         #t (open-input-rope l) (open-input-rope r))]))
@@ -240,19 +252,27 @@
   ;; in the paper.
   (define (rope-balance a-rope)
     (local ((define (add-leaf-to-forest a-leaf a-forest)
-              (cond
-                [(empty? a-forest)
-                 (list a-leaf)]
-                [(< (rope-length a-leaf)
-                    (rope-length (first a-forest)))
-                 (cons a-leaf a-forest)]
-                [else
-                 (local
-                     ((define partial-forest
-                        (merge-smaller-children a-forest (rope-length a-leaf))))
-                   (restore-forest-order
-                    (cons (rope-append (first partial-forest) a-leaf)
-                          (rest partial-forest))))]))
+              (local ((define leaf-node
+                        (cond [(string? a-leaf)
+                               (make-rope:string a-leaf)]
+                              [else
+                               (make-rope:special a-leaf)])))
+                (cond
+                  [(empty? a-forest)
+                   (list leaf-node)]
+                  [(< (rope-length leaf-node)
+                      (rope-length (first a-forest)))
+                   (cons leaf-node a-forest)]
+                  [else
+                   (local
+                       ((define partial-forest
+                          (merge-smaller-children
+                           a-forest
+                           (rope-length leaf-node))))
+                     (restore-forest-order
+                      (cons (rope-append (first partial-forest)
+                                         leaf-node)
+                            (rest partial-forest))))])))
             
             (define (merge-smaller-children a-forest n)
               (cond
@@ -292,7 +312,9 @@
   ;; rope-depth: rope -> natural-number
   (define (rope-depth a-rope)
     (match a-rope
-      [(? string?)
+      [(struct rope:string (s))
+       0]
+      [(struct rope:special (s))
        0]
       [(struct rope:concat (l r len))
        (max (add1 (rope-depth l))
@@ -304,7 +326,9 @@
   ;; Just for debugging.
   (define (rope-node-count a-rope)
     (match a-rope
-      [(? string?)
+      [(struct rope:string (s))
+       1]
+      [(struct rope:special (s))
        1]
       [(struct rope:concat (l r len))
        (add1 (+ (rope-node-count l)

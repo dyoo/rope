@@ -14,23 +14,26 @@
   
   
   (define (make-long-degenerate-rope)
-    (define my-rope "")
+    (define my-rope (string->rope ""))
     (do-ec (:range i 5000)
-           (set! my-rope (++ my-rope (format "hello~a" i))))
+           (set! my-rope (++ my-rope
+                             (string->rope (format "hello~a" i)))))
     my-rope)
-  
   
   
   (define (read-file-as-rope filename)
     (call-with-input-file filename
       (lambda (ip)
         (let loop ([char (read-char ip)]
-                   [a-rope ""])
+                   [a-rope (string->rope "")])
           (cond [(eof-object? char)
                  a-rope]
                 [else
                  (loop (read-char ip)
-                       (rope-append a-rope (string char)))])))))
+                       (rope-append a-rope
+                                    (string->rope (string char))))])))))
+  
+  (define sr string->rope)
   
   (provide rope-tests)
   (define rope-tests
@@ -38,20 +41,22 @@
      "rope.ss"
      (test-case
       "rope?"
-      (check-true (rope? "is this a rope?"))
-      (check-true (rope? (rope-append "hello " "world"))))
+      (check-false (rope? "is this a rope?"))
+      (check-true (rope? (string->rope "is this a rope?")))
+      (check-true (rope? (rope-append (string->rope "hello ")
+                                      (string->rope "world")))))
      
      (test-case
       "rope-append"
-      (check-equal? (rope->string (rope-append "" "abcd"))
-                    (rope->string (rope-append "abcd" ""))))
+      (check-equal? (rope->string (rope-append (sr "") (sr "abcd")))
+                    (rope->string (rope-append (sr "abcd") (sr "")))))
      
      (test-case
       "subrope checking bounds"
       (local ((define myrope (make-long-degenerate-rope)))
         (check-equal? (rope->string
-                      (subrope myrope 0 18))
-                     "hello0hello1hello2")
+                       (subrope myrope 0 18))
+                      "hello0hello1hello2")
         (check-equal? (rope->string
                        (subrope myrope 1 18))
                       "ello0hello1hello2")
@@ -76,9 +81,15 @@
       (parameterize ([current-optimize-flat-ropes #f])
         (check-equal? "abcdef"
                       (rope->string
-                       (rope-balance (++ "a" (++ "bc" (++ "d" "ef"))))))
+                       (rope-balance (++ (sr "a")
+                                         (++ (sr "bc")
+                                             (++ (sr "d")
+                                                 (sr "ef")))))))
         (check-equal? (rope-depth
-                       (rope-balance (++ "a" (++ "bc" (++ "d" "ef")))))
+                       (rope-balance (++ (sr "a")
+                                         (++ (sr "bc")
+                                             (++ (sr "d")
+                                                 (sr "ef"))))))
                       2)))
      
      (test-case
@@ -87,7 +98,7 @@
         (check-equal? (rope-fold/leaves (lambda (a-str acc)
                                           (cons a-str acc))
                                         '()
-                                        (++ "hello" "world"))
+                                        (++ (sr "hello") (sr "world")))
                       (list "world" "hello"))))
      
      
@@ -97,8 +108,10 @@
         (check-equal? (rope-fold (lambda (a-str acc)
                                    (cons a-str acc))
                                  '()
-                                 (++ "hello" "world"))
-                      (reverse (list #\h #\e #\l #\l #\o #\w #\o #\r #\l #\d)))))
+                                 (++ (sr "hello") (sr "world")))
+                      (reverse
+                       (list #\h #\e #\l #\l #\o
+                             #\w #\o #\r #\l #\d)))))
      
      
      (test-case
@@ -107,35 +120,54 @@
         (check-equal?
          (regexp-match
           "abracadabra"
-          (open-input-rope (++ "a" (++ "braca" (++ (++ "da" "br") "a")))))
+          (open-input-rope
+           (++ (sr "a") (++ (sr "braca")
+                            (++ (++ (sr "da") (sr "br")) (sr "a"))))))
          '(#"abracadabra"))))
      
      
      (test-case
       "rope-depth and balancing"
       (parameterize ([current-optimize-flat-ropes #f])
-        (check-equal? (rope-depth (rope-balance (++ "h0" "h1")))
+        (check-equal? (rope-depth (rope-balance (++ (sr "h0")
+                                                    (sr "h1"))))
                       1)
-        (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" "h2"))))
+        (check-equal? (rope-depth (rope-balance (++ (sr "h0")
+                                                    (++ (sr "h1")
+                                                        (sr "h2")))))
                       2)
-        (check-equal? (rope-depth (rope-balance (++ "h0" (++ "h1" (++ "h2" "h3")))))
-                      2)
+        (check-equal?
+         (rope-depth (rope-balance (++ (sr "h0")
+                                       (++ (sr "h1")
+                                           (++ (sr "h2") (sr "h3"))))))
+         2)
         (check-equal? (rope-depth
                        (rope-balance
-                        (++ "h0" (++ "h1" (++ "h2" (++ "h3" "h4"))))))
+                        (++ (sr "h0") (++ (sr "h1")
+                                          (++ (sr "h2")
+                                              (++ (sr "h3")
+                                                  (sr "h4")))))))
                       3)
-        (check-equal? (rope-depth
-                       (rope-balance
-                        (++ "h0" (++ "h1" (++ "h2" (++ "h3" (++ "h4" "h5")))))))
-                      3)))
+        (check-equal?
+         (rope-depth
+          (rope-balance
+           (++ (sr "h0")
+               (++ (sr "h1")
+                   (++ (sr "h2")
+                       (++ (sr "h3") (++ (sr "h4") (sr "h5"))))))))
+         3)))
      
      
      (test-case
       "rope-ref"
       (parameterize ([current-optimize-flat-ropes #f])
         (local ((define word-rope (++
-                                   (++ (++ "super" "cali") (++ "fragil" "istic"))
-                                   (++ "expiali" "docious")))
+                                   (++ (++ (sr "super")
+                                           (sr "cali"))
+                                       (++ (sr "fragil")
+                                           (sr "istic")))
+                                   (++ (sr "expiali")
+                                       (sr "docious"))))
                 (define word-string "supercalifragilisticexpialidocious"))
           (for-each (lambda (i ch)
                       (check-equal? (rope-ref word-rope i) ch))
