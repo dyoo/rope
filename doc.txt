@@ -118,7 +118,7 @@ then the subrope extends to the end of the rope.
 
 Creates a string from the content in the rope.
 
-NOTE: if the rope contains special nodes, this function will raise an error.
+NOTE: if the rope has a special, this function will raise an error.
 
 
 > rope-for-each: (char-or-special -> void) rope -> void
@@ -133,8 +133,8 @@ or special in the rope.
 
 > rope-fold/leaves: (immutable-string-or-special X) X rope -> X
 
-Folds an accumulating function across every chunk 
-of string or special in the rope.
+Folds an accumulating function across every string or special
+in the rope.
 
 
 > open-input-rope: rope -> input-port
