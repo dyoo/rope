@@ -369,5 +369,6 @@
    
    [rope-balance (rope? . -> . rope?)]
    [rope-depth (rope? . -> . natural-number/c)]
+   [rope-node-count (rope? . -> . natural-number/c)]
    
    [open-input-rope (rope? . -> . input-port?)]))

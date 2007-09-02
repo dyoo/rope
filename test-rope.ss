@@ -184,6 +184,20 @@
                                 (special->rope b)) 5))))
      
      (test-case
+      "rope-for-each"
+      (parameterize ([current-optimize-flat-ropes #f])
+        (local ((define seen-chars '()))
+          (rope-for-each
+           (lambda (ch/special)
+             (set! seen-chars (cons ch/special seen-chars)))
+           (++ (string->rope "lambda-the-")
+               (string->rope "ultimate")))
+          (check-equal?
+           seen-chars
+           (reverse (string->list "lambda-the-ultimate"))))))
+     
+     
+     (test-case
       "rope-fold and specials"
       (local ((define mybox (box " "))
               (define rope-with-specials
@@ -194,6 +208,28 @@
          (reverse (rope-fold cons '() rope-with-specials))
          (list #\h #\e #\l #\l #\o mybox #\w #\o #\r #\l #\d))))
      
+     (test-case
+      "rope-length"
+      (local ((define a-rope
+                (rope-append 
+                 (string->rope 
+                  "hello, this is a test of the emergency broadcast")
+                 (string->rope "system; this is only a test"))))
+        (check-equal? (rope-length a-rope) 75)))
+     
+     
+     (test-case
+      "rope-has-special?"
+      (local ((define a-rope (rope-append
+                              (string->rope "x")
+                              (rope-append
+                               (special->rope (box "I am a special"))
+                               (string->rope "y")))))
+        (check-true (rope-has-special? a-rope))
+        (check-false (rope-has-special? (subrope a-rope 0 1)))
+        (check-true (rope-has-special? (subrope a-rope 1)))
+        (check-true (rope-has-special? (subrope a-rope 1 2)))
+        (check-false (rope-has-special? (subrope a-rope 2)))))
      
      (test-case
       "ports and specials"
@@ -210,7 +246,17 @@
                    a-special)
         (check-equal? (read-byte-or-special inp)
                       (char->integer #\y))
-        (check-true (eof-object? (read-byte-or-special inp)))))))
+        (check-true (eof-object? (read-byte-or-special inp)))))
+     
+     
+     (test-case
+      "rope-node-count"
+      (check-equal? (rope-node-count (string->rope "x")) 1)
+      (check-equal? (rope-node-count (special->rope (box "x"))) 1)
+      (check-equal? (rope-node-count
+                     (rope-append (string->rope "x")
+                                  (special->rope (box "x"))))
+                    3))))
   
   
   (test/text-ui rope-tests))

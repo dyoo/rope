@@ -151,7 +151,7 @@ Other API functions
 Returns the depth of the rope data structure.
 
 
-> rope-count-nodes: rope -> natural-number
+> rope-node-count: rope -> natural-number
 
 Returns the number of nodes in the rope.
 
