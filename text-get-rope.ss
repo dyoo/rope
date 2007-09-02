@@ -1,18 +1,37 @@
 (module text-get-rope mzscheme
   
-  ;; Provides a text% mixin that adds a get-rope method.
+  ;; Provides a text% mixin that adds get-rope and set-rope methods.
   (require (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "etc.ss")
            (lib "lex.ss" "parser-tools")
            "rope.ss")
   
+  (provide rope-mixin)
+  
   (define (rope-mixin super%)
     (class super%
+      (inherit begin-edit-sequence
+               end-edit-sequence
+               erase
+               insert
+               delete)
       (define rope (string->rope ""))
       
       (define/public (get-rope)
         rope)
+      
+      (define/public (set-rope a-rope)
+        ;; Really inefficient. Fixme by using edit distance (levenshein)
+        (begin-edit-sequence)
+        (erase)
+        (rope-fold/leaves (lambda (snip _)
+                            (insert snip))
+                          #f
+                          a-rope)
+        (set! rope a-rope)
+        (end-edit-sequence))
+      
       
       (define/augment (after-delete start len)
         (inner #f after-delete start len)
