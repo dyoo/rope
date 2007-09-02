@@ -172,7 +172,45 @@
           (for-each (lambda (i ch)
                       (check-equal? (rope-ref word-rope i) ch))
                     (build-list (string-length word-string) (lambda (i) i))
-                    (string->list word-string)))))))
+                    (string->list word-string)))))
+     
+     (test-case
+      "rope-ref and specials"
+      (local ((define b (box "I am a box")))
+        (check-eq? b (rope-ref (special->rope b) 0))
+        (check-eq?
+         b
+         (rope-ref (rope-append (string->rope "rope ")
+                                (special->rope b)) 5))))
+     
+     (test-case
+      "rope-fold and specials"
+      (local ((define mybox (box " "))
+              (define rope-with-specials
+                (rope-append (string->rope "hello")
+                             (rope-append (special->rope mybox)
+                                          (string->rope "world")))))
+        (check-equal?
+         (reverse (rope-fold cons '() rope-with-specials))
+         (list #\h #\e #\l #\l #\o mybox #\w #\o #\r #\l #\d))))
+     
+     
+     (test-case
+      "ports and specials"
+      (local ((define a-special 42)
+              (define a-rope (rope-append
+                              (string->rope "x")
+                              (rope-append
+                               (special->rope a-special)
+                               (string->rope "y"))))
+              (define inp (open-input-rope a-rope)))
+        (check-equal? (read-byte-or-special inp)
+                      (char->integer #\x))
+        (check-eq? (read-byte-or-special inp)
+                   a-special)
+        (check-equal? (read-byte-or-special inp)
+                      (char->integer #\y))
+        (check-true (eof-object? (read-byte-or-special inp)))))))
   
   
   (test/text-ui rope-tests))
