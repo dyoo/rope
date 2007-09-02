@@ -28,12 +28,12 @@
   ;; A leaf-node is considered to be a string-node or special-node.
   
   
-
+  
   
   ;; Arbitrary length cutoff until we allocate a new concat node
   ;; TODO: experiment to see what value is good for this.
   (define cutoff-before-concat-node-use 32)
-
+  
   ;; below-flat-collapsing-cutoff?: string string -> boolean
   (define (below-flat-collapsing-cutoff? s1 s2)
     (and (current-optimize-flat-ropes)
@@ -356,7 +356,15 @@
   
   
   (provide current-optimize-flat-ropes)
+  
   (provide/contract
+   
+   [struct (rope:string rope) [(s string?)]]
+   [struct (rope:special rope) [(s (not/c string?))]]
+   [struct (rope:concat rope) ((l rope?)
+                               (r rope?)
+                               (len natural-number/c))]
+   
    [rope? (any/c . -> . boolean?)]
    [rope-has-special? (rope? . -> . boolean?)]
    [rope-append (rope? rope? . -> . rope?)]

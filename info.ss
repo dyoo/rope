@@ -1,11 +1,11 @@
 (module info (lib "infotab.ss" "setup")
   (define name "rope")
   (define blurb '("Ropes for fast string concatenation and subsequencing"))
-  (define release-notes '((p "Added small optimization for concatenation of empty string.")))
+  (define release-notes '((p "Exposed structure definitions for low-level node traversal.")))
   (define categories '(datastructures))
   (define homepage "http://hashcollision.org/")
   (define can-be-loaded-with 'all)
-  (define version "2.1")
+  (define version "2.2")
   (define doc.txt "doc.txt")
   (define primary-file "rope.ss"))
 
