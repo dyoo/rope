@@ -4,8 +4,8 @@
   (require (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "etc.ss")
-           "rope.ss"
-           (lib "lex.ss" "parser-tools"))
+           (lib "lex.ss" "parser-tools")
+           "rope.ss")
   
   (define (rope-mixin super%)
     (class super%

@@ -93,8 +93,14 @@
     (local ((define l1 (rope-length rope-1))
             (define l2 (rope-length rope-2))
             (define (make-default-concat r1 r2)
-              (make-rope:concat r1 r2 (+ (rope-length r1)
-                                         (rope-length r2)))))
+              (cond
+                [(= 0 (rope-length r1))
+                 rope-2]
+                [(= 0 (rope-length r2))
+                 rope-1]
+                [else
+                 (make-rope:concat r1 r2 (+ (rope-length r1)
+                                            (rope-length r2)))])))
       (match (list rope-1 rope-2)
         [(list (struct rope:string (s1))
                (struct rope:string (s2)))
@@ -115,6 +121,7 @@
              left-rope
              (make-rope:string (immutable-string-append s1 s2))
              (+ l1 l2))]
+           
            [else
             (make-default-concat rope-1 rope-2)])]
         

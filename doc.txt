@@ -163,6 +163,7 @@ Returns a balanced version of the rope with logarithmic height.
 
 
 
+
 Notes
 =====
 
