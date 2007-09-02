@@ -328,6 +328,7 @@
       (concatenate-forest
        (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
+  
   ;; rope-depth: rope -> natural-number
   (define (rope-depth a-rope)
     (match a-rope
@@ -341,7 +342,8 @@
   
   
   ;; rope-node-count: rope -> natural-number
-  ;; Counts how many nodes (both leaves and concat nodes) are in the rope.
+  ;; Counts how many nodes (both leaves and concat nodes) are
+  ;; in the rope.
   ;; Just for debugging.
   (define (rope-node-count a-rope)
     (match a-rope
@@ -354,20 +356,23 @@
                 (rope-node-count r)))]))
   
   
+  ;; Here are our exposed functions:
   
   (provide current-optimize-flat-ropes)
   
   (provide/contract
-   
+   [struct rope []]
    [struct (rope:string rope) [(s string?)]]
    [struct (rope:special rope) [(s (not/c string?))]]
    [struct (rope:concat rope) ((l rope?)
                                (r rope?)
                                (len natural-number/c))]
    
-   [rope? (any/c . -> . boolean?)]
-   [rope-has-special? (rope? . -> . boolean?)]
+   [string->rope (string? . -> . rope?)]
+   [special->rope ((not/c string?) . -> . rope?)]
    [rope-append (rope? rope? . -> . rope?)]
+   [rope-has-special? (rope? . -> . boolean?)]
+   
    [rope-length (rope? . -> . natural-number/c)]
    [rope-ref (rope? natural-number/c . -> . any)]
    [subrope (case->
@@ -375,15 +380,14 @@
              (rope? natural-number/c . -> . rope?))]
    
    [rope->string (rope? . -> . string?)]
-   [string->rope (string? . -> . rope?)]
-   [special->rope ((not/c string?) . -> . rope?)]
+   
    
    [rope-for-each ((any/c . -> . any) rope? . -> . any)]
    [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]
    [rope-fold/leaves ((any/c any/c . -> . any) any/c rope? . -> . any)]
    
+   [open-input-rope (rope? . -> . input-port?)]
+   
    [rope-balance (rope? . -> . rope?)]
    [rope-depth (rope? . -> . natural-number/c)]
-   [rope-node-count (rope? . -> . natural-number/c)]
-   
-   [open-input-rope (rope? . -> . input-port?)]))
+   [rope-node-count (rope? . -> . natural-number/c)]))
