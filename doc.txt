@@ -12,7 +12,7 @@ This presents a _rope_ data structure which is very much like a
 string, except that it provides constant-time concatenation, as well
 as inexpensive subsequencing.  It's pretty much what's described in
 the paper "Ropes: an Alternative to Strings" by Boehm, Atkinson, and
-Plauss.
+Plauss.  This library also allows special values to be part of a rope.
 
 
 Example
@@ -101,9 +101,9 @@ Returns true if the rope contains a special node.
 Returns the length of a rope.
 
 
-> rope-ref: rope natural -> char
+> rope-ref: rope natural-number -> char-or-special
 
-Returns the nth character of a rope.
+Returns the nth character or special in a rope.
 
 
 > subrope: rope start [end] -> rope
@@ -139,6 +139,7 @@ rope.
 > open-input-rope: rope -> input-port
 
 Returns an input port whose byte content comes from the rope.
+Specials can be read with read-byte-or-special.
 
 
 Other API functions

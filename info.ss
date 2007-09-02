@@ -1,7 +1,7 @@
 (module info (lib "infotab.ss" "setup")
   (define name "rope")
   (define blurb '("Ropes for fast string concatenation and subsequencing"))
-  (define release-notes '((p "Support for special nodes.")
+  (define release-notes '((p "Support for specials in a rope.")
                           (p "API change: strings must be explictly turned into ropes with string->rope")))
   (define categories '(datastructures))
   (define homepage "http://hashcollision.org/")
