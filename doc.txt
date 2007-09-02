@@ -98,19 +98,21 @@ Returns true if the rope contains a special node.
 
 > rope-length: rope -> natural-number
 
-Returns the length of a rope.
+Returns the length of a rope.  Cost is constant time.
 
 
 > rope-ref: rope natural-number -> char-or-special
 
-Returns the nth character or special in a rope.
+Returns the nth character or special in a rope.  Cost is proportional
+to the rope-depth of the rope.
 
 
 > subrope: rope start [end] -> rope
 
 Returns a subsequence of the rope containing all the character from
 start up to (but not including) the end.  If the end is not provided,
-then the subrope extends to the end of the rope.
+then the subrope extends to the end of the rope.  Cost is proportional
+to the rope-depth of the rope.
 
 
 > rope->string: rope -> string
@@ -129,6 +131,7 @@ Applies the input function on every character or special in the rope.
 
 Folds an accumulating function across every character or special in
 the rope.
+
 
 > rope-fold/leaves: (immutable-string-or-special X) X rope -> X
 
@@ -158,7 +161,8 @@ Returns the number of nodes in the rope.
 
 > rope-balance: rope -> rope
 
-Returns a balanced version of the rope with logarithmic height.
+Returns a balanced version of the rope whose rope-depth is roughly
+logarithmic to its rope-node-count.
 
 
 
@@ -199,10 +203,11 @@ All operations are done without mutation.
 Recent changes
 ==============
 
-2007/09/02: exposed structure definitions, although most users won't
+Version 2.2: exposed structure definitions, although most users won't
 touch these directly.
 
-2007/09/01: library API extended to support "special" objects.  Also,
+
+Version 2.1: library API extended to support "special" objects.  Also,
 strings must be explicitly converted into strings now.
 
 
