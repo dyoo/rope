@@ -58,28 +58,27 @@ A rope is defined to be either:
    * A special node, or
    * A concatenation node made of a left rope and a right rope.
 
-Use string->rope and special->rope to convert those types to
-their respective ropes.  Concatenation nodes are built
-with rope-append.
+Use string->rope and special->rope to convert those types to their
+respective ropes.  Concatenation nodes are built with rope-append.
+
 
 
 > string->rope: string -> rope
 
-Given a long string, breaks it up into smaller rope
-fragments and appends them all together.  The resulting
-rope is balanced.
+Given a long string, breaks it up into smaller rope fragments and
+appends them all together.  The resulting rope is balanced.
 
 
 > special->rope: (not string?) -> rope
 
-Creates a rope element of length one whose content is the given element.
+Creates a rope element of length one whose content is the given
+element.
 
-Caveat: The special should not be a string.
-If it's necessary to construct and distinguish such a special,
-one workaround is to wrap with a box.
-Rationale: the behavior of rope-fold/leaves becomes ambiguous and
-otherwise wouldn't let a client distinguish between a string and
-a special-as-a-string.
+Caveat: The special should not be a string.  If it's necessary to
+construct and distinguish such a special, one workaround is to wrap
+with a box.  Rationale: the behavior of rope-fold/leaves becomes
+ambiguous and otherwise wouldn't let a client distinguish between a
+string and a special-as-a-string.
 
 
 > rope-append: rope rope -> rope
@@ -118,7 +117,7 @@ then the subrope extends to the end of the rope.
 
 Creates a string from the content in the rope.
 
-NOTE: if the rope has a special, this function will raise an error.
+Note: if the rope has a special, this function will raise an error.
 
 
 > rope-for-each: (char-or-special -> void) rope -> void
@@ -128,13 +127,13 @@ Applies the input function on every character or special in the rope.
 
 > rope-fold: (char-or-special X) X rope -> X
 
-Folds an accumulating function across every character
-or special in the rope.
+Folds an accumulating function across every character or special in
+the rope.
 
 > rope-fold/leaves: (immutable-string-or-special X) X rope -> X
 
-Folds an accumulating function across every string or special
-in the rope.
+Folds an accumulating function across every string or special in the
+rope.
 
 
 > open-input-rope: rope -> input-port
@@ -168,7 +167,8 @@ Notes
 
 Unlike the description in the paper, this library does not
 automatically rebalance the data structure when applying subrope or
-rope-append.  Explicit rebalancing may improve the performance of subsequencing and referencing on the balanced tree.
+rope-append.  Explicit rebalancing may improve the performance of
+subsequencing and referencing on the balanced tree.
 
 All operations are done without mutation.
 
@@ -177,7 +177,8 @@ All operations are done without mutation.
 Recent changes
 ==============
 
-2007/09/01: library API extended to support "special" objects.
+2007/09/01: library API extended to support "special" objects.  Also,
+strings must be explicitly converted into strings now.
 
 
 
