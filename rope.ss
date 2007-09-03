@@ -253,17 +253,19 @@
   ;; open-input-rope: rope -> input-port
   ;; Opens an input port using the characters in the rope.
   (define (open-input-rope a-rope)
-    (match a-rope
-      [(struct rope:string (s))
-       (open-input-string s)]
-      [(struct rope:special (s))
-       (let-values ([(inp outp) (make-pipe-with-specials)])
-         (write-special s outp)
-         (close-output-port outp)
-         inp)]
-      [(struct rope:concat (l r len))
-       (input-port-append
-        #t (open-input-rope l) (open-input-rope r))]))
+    (local ((define-values (inp outp)
+              (make-pipe-with-specials)))
+      (rope-fold/leaves (lambda (string/special _)
+                          (cond
+                            [(string? string/special)
+                             (when (> (string-length string/special) 0)
+                               (display string/special outp))]
+                            [else
+                             (write-special string/special outp)]))
+                        #f
+                        a-rope)
+      (close-output-port outp)
+      inp))
   
   
   ;; rope-balance: rope -> rope
