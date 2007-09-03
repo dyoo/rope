@@ -5,7 +5,7 @@
   (define categories '(datastructures))
   (define homepage "http://hashcollision.org/")
   (define can-be-loaded-with 'all)
-  (define version "2.2")
+  (define version "2.3")
   (define doc.txt "doc.txt")
   (define primary-file "rope.ss"))
 
