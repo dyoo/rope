@@ -203,7 +203,8 @@ All operations are done without mutation.
 Recent changes
 ==============
 
-Version 2.3: improved implementation of open-input-rope.
+Version 2.3: improved implementation of open-input-rope.  Fixed silly
+bug involving subrope and specials.
 
 
 Version 2.2: exposed structure definitions, although most users won't
