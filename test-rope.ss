@@ -256,7 +256,7 @@
      
      (test-case
       "subroping a special"
-      (local ((define a-rope (special-rope 42)))
+      (local ((define a-rope (special->rope 42)))
         (check-eq? (subrope a-rope 0)
                    a-rope)
         (check-equal? (rope->string (subrope a-rope 0 0)) "")
