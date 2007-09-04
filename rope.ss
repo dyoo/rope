@@ -158,7 +158,10 @@
                   (immutable-substring s start end))]
                 
                 [(struct rope:special (s))
-                 a-rope]
+                 (cond [(= start end)
+                        (make-rope:string "")]
+                       [else
+                        a-rope])]
                 
                 [(struct rope:concat (rope-1 rope-2 len))
                  (local

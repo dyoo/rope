@@ -252,7 +252,15 @@
       (check-equal? (rope-node-count
                      (rope-append (string->rope "x")
                                   (special->rope (box "x"))))
-                    3))))
+                    3))
+     
+     (test-case
+      "subroping a special"
+      (local ((define a-rope (special-rope 42)))
+        (check-eq? (subrope a-rope 0)
+                   a-rope)
+        (check-equal? (rope->string (subrope a-rope 0 0)) "")
+        (check-equal? (rope->string (subrope a-rope 1)) "")))))
   
   
   (test/text-ui rope-tests))
