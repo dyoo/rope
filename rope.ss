@@ -374,11 +374,6 @@
                     acc
                     (special->rope (vector-ref a-vec i))))])))
   
-  ;; string->vector: string -> vector
-  (define (string->vector a-str)
-    (build-vector (string-length a-str)
-                  (lambda (i)
-                    (string-ref a-str i))))
   
   ;; rope=?: rope rope -> rope
   ;; Returns true if the rope contains the same content.
@@ -405,8 +400,18 @@
          
          [(list (struct rope:string (s1))
                 (struct rope:concat (l2 r2 len2)))
-          (equal? (string->vector s1)
-                  (rope->vector rope-2))]
+          (let/ec return
+            (= len2
+               (rope-fold (lambda (ch/special i)
+                            (cond
+                              [(and (char? ch/special)
+                                    (char=? ch/special
+                                            (string-ref s1 i)))
+                               (add1 i)]
+                              [else
+                               (return #f)]))
+                          0
+                          rope-2)))]
          
          [(list (struct rope:special (s1))
                 (struct rope:string (s2)))
