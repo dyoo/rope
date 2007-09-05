@@ -431,11 +431,7 @@
          
          [(list (struct rope:concat (l1 r1 len1))
                 (struct rope:concat (l2 r2 len2)))
-          (cond [(eq? l1 l2)
-                 (rope=? r1 r2)]
-                [(eq? r1 r2)
-                 (rope=? l1 l2)]
-                [(= (rope-length l1) (rope-length l2))
+          (cond [(= (rope-length l1) (rope-length l2))
                  (and (rope=? l1 l2)
                       (rope=? r1 r2))]
                 [else
