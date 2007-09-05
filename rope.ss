@@ -256,8 +256,18 @@
   ;; open-input-rope: rope -> input-port
   ;; Opens an input port using the characters in the rope.
   (define (open-input-rope a-rope)
-    (local ((define-values (inp outp)
-              (make-pipe-with-specials)))
+    (local (;; pipe-f: -> (values inp outp)
+            ;; Builds a pipe for input and output. We do some logic here
+            ;; because make-pipe is faster: if we don't have specials, then
+            ;; we can take advantage of it.
+            (define pipe-f
+              (cond
+                [(rope-has-special? a-rope)
+                 make-pipe-with-specials]
+                [else
+                 make-pipe]))
+            (define-values (inp outp)
+              (pipe-f)))
       (rope-fold/leaves (lambda (string/special _)
                           (cond
                             [(string? string/special)
