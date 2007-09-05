@@ -344,6 +344,107 @@
        (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
   
+  ;; rope->vector: rope -> (vectorof char-or-special)
+  ;; Given a rope, returns a vector containing all of its items.
+  (define (rope->vector a-rope)
+    (local ((define vec (make-vector (rope-length a-rope))))
+      (rope-fold (lambda (char-or-special index)
+                    (vector-set! vec index char-or-special)
+                    (add1 index))
+                  0
+                  a-rope)
+      vec))
+  
+  
+  ;; vector->rope: (vectorof char special) -> rope
+  ;; Inverts rope->vector.
+  (define (vector->rope a-vec)
+    (let loop ([i 0]
+               [acc (string->rope "")])
+      (cond [(= i (vector-length a-vec))
+             acc]
+            [(char? (vector-ref a-vec i))
+             (loop (add1 i)
+                   (rope-append
+                    acc
+                    (string->rope (string (vector-ref a-vec i)))))]
+            [else
+             (loop (add1 i)
+                   (rope-append
+                    acc
+                    (special->rope (vector-ref a-vec i))))])))
+  
+  ;; string->vector: string -> vector
+  (define (string->vector a-str)
+    (build-vector (string-length a-str)
+                  (lambda (i)
+                    (string-ref a-str i))))
+  
+  ;; rope=?: rope rope -> rope
+  ;; Returns true if the rope contains the same content.
+  ;; Specials are compared by eq?
+  (define (rope=? rope-1 rope-2)
+    (cond
+      [(eq? rope-1 rope-2)
+       #t]
+      [(not (= (rope-length rope-1)
+               (rope-length rope-2)))
+       #f]
+      [else
+       ;; Ugly case analysis ahead: we've got
+       ;; to cover all the cases if we want to avoid
+       ;; the default that uses rope->vector.
+       (match (list rope-1 rope-2)
+         [(list (struct rope:string (s1))
+                (struct rope:string (s2)))
+          (string=? s1 s2)]
+         
+         [(list (struct rope:string (s1))
+                (struct rope:special (s2)))
+          #f]
+         
+         [(list (struct rope:string (s1))
+                (struct rope:concat (l2 r2 len2)))
+          (equal? (string->vector s1)
+                  (rope->vector rope-2))]
+         
+         [(list (struct rope:special (s1))
+                (struct rope:string (s2)))
+          #f]
+         
+         [(list (struct rope:special (s1))
+                (struct rope:special (s2)))
+          (eq? s1 s2)]
+         
+         [(list (struct rope:special (s1))
+                (struct rope:concat (l2 r2 len2)))
+          (or (rope=? rope-1 l2)
+              (rope=? rope-1 r2))]
+         
+         [(list (struct rope:concat (l1 r1 len1))
+                (struct rope:string (s2)))
+          (rope=? rope-2 rope-1)]
+         
+         [(list (struct rope:concat (l1 r1 len1))
+                (struct rope:special (s2)))
+          (rope=? rope-2 rope-1)]
+         
+         [(list (struct rope:concat (l1 r1 len1))
+                (struct rope:concat (l2 r2 len2)))
+          (cond [(eq? l1 l2)
+                 (rope=? r1 r2)]
+                [(eq? r1 r2)
+                 (rope=? l1 l2)]
+                [(= (rope-length l1) (rope-length l2))
+                 (and (rope=? l1 l2)
+                      (rope=? r1 r2))]
+                [else
+                 (equal? (rope->vector rope-1)
+                         (rope->vector rope-2))])])]))
+  
+  
+  
+  
   ;; rope-depth: rope -> natural-number
   (define (rope-depth a-rope)
     (match a-rope
