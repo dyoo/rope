@@ -133,9 +133,9 @@
          (make-default-concat rope-1 rope-2)])))
   
   
-  ;; rope-append*: (listof rope) -> rope
-  ;; Appends a list of ropes to a single rope.
-  (define (rope-append* some-ropes)
+  ;; rope-append*: rope* -> rope
+  ;; Appends a sequence of ropes into a single rope.
+  (define (rope-append* . some-ropes)
     ;; fixme; try to do it in an order that keeps things balanced.
     (foldl (lambda (x acc)
              (rope-append acc x))
@@ -501,7 +501,7 @@
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]
    [rope-append (rope? rope? . -> . rope?)]
-   [rope-append* ((listof rope?) . -> . rope?)]
+   [rope-append* (() (listof rope?) . ->* . (rope?))]
    [rope-has-special? (rope? . -> . boolean?)]
    
    [rope-length (rope? . -> . natural-number/c)]
