@@ -133,6 +133,15 @@
          (make-default-concat rope-1 rope-2)])))
   
   
+  ;; rope-append*: (listof rope) -> rope
+  ;; Appends a list of ropes to a single rope.
+  (define (rope-append* some-ropes)
+    ;; fixme; try to do it in an order that keeps things balanced.
+    (foldl (lambda (x acc)
+             (rope-append acc x))
+           rope-empty
+           some-ropes))
+  
   
   ;; rope-ref: rope number -> character
   ;; Gets the nth character of a-rope.
@@ -415,15 +424,17 @@
        (rope-fold/leaves add-leaf-to-forest '() a-rope))))
   
   
+  
+  
   ;; rope->vector: rope -> (vectorof char-or-special)
   ;; Given a rope, returns a vector containing all of its items.
   (define (rope->vector a-rope)
     (local ((define vec (make-vector (rope-length a-rope))))
       (rope-fold (lambda (char-or-special index)
-                    (vector-set! vec index char-or-special)
-                    (add1 index))
-                  0
-                  a-rope)
+                   (vector-set! vec index char-or-special)
+                   (add1 index))
+                 0
+                 a-rope)
       vec))
   
   
@@ -490,6 +501,7 @@
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]
    [rope-append (rope? rope? . -> . rope?)]
+   [rope-append* ((listof rope?) . -> . rope?)]
    [rope-has-special? (rope? . -> . boolean?)]
    
    [rope-length (rope? . -> . natural-number/c)]
@@ -498,7 +510,7 @@
              (rope? natural-number/c natural-number/c . -> . rope?)
              (rope? natural-number/c . -> . rope?))]
    
-   [rope=? (rope? rope? . -> . rope?)]
+   [rope=? (rope? rope? . -> . boolean?)]
    
    [rope->string (rope? . -> . string?)]
    [rope->vector (rope? . -> . vector?)]
