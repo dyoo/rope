@@ -293,14 +293,18 @@
   ;; rope->string: rope -> string
   ;; Gets a string from the rope.
   (define (rope->string a-rope)
-    (match a-rope
-      [(struct rope:string (s))
-       s]
-      [(struct rope:special (s))
-       (error 'rope->string "rope contains special ~s" s)]
-      [(struct rope:concat (l r len))
-       (string-append (rope->string l)
-                      (rope->string r))]))
+    (let ([target (make-string (rope-length a-rope))])
+      (let loop! ([a-rope a-rope]
+                  [i 0])
+        (match a-rope
+          [(struct rope:string (s))
+           (string-copy! target i s)
+           (+ i (string-length s))]
+          [(struct rope:special (s))
+           (error 'rope->string "rope contains special ~s" s)]
+          [(struct rope:concat (l r len))
+           (loop! r (loop! l i))]))
+      target))
   
   
   ;; rope-for-each: (char -> void) rope -> void
@@ -336,29 +340,26 @@
   ;; open-input-rope: rope -> input-port
   ;; Opens an input port using the characters in the rope.
   (define (open-input-rope a-rope)
-    (local (;; pipe-f: -> (values inp outp)
-            ;; Builds a pipe for input and output. We do some logic here
-            ;; because make-pipe is faster: if we don't have specials, then
-            ;; we can take advantage of it.
-            (define pipe-f
-              (cond
-                [(rope-has-special? a-rope)
-                 make-pipe-with-specials]
-                [else
-                 make-pipe]))
-            (define-values (inp outp)
-              (pipe-f)))
-      (rope-fold/leaves (lambda (string/special _)
-                          (cond
-                            [(string? string/special)
-                             (when (> (string-length string/special) 0)
-                               (display string/special outp))]
-                            [else
-                             (write-special string/special outp)]))
-                        #f
-                        a-rope)
-      (close-output-port outp)
-      inp))
+    (cond
+      ;; Builds a pipe for input and output. We do some logic here
+      ;; because if we don't have specials, then
+      ;; we can take advantage of it.
+      [(rope-has-special? a-rope)
+       (local ((define-values (inp outp)
+                 (make-pipe-with-specials)))
+         (rope-fold/leaves (lambda (string/special _)
+                             (cond
+                               [(string? string/special)
+                                (when (> (string-length string/special) 0)
+                                  (display string/special outp))]
+                               [else
+                                (write-special string/special outp)]))
+                           #f
+                           a-rope)
+         (close-output-port outp)
+         inp)]
+      [else
+       (open-input-string (rope->string a-rope))]))
   
   
   ;; rope-balance: rope -> rope
