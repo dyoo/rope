@@ -69,7 +69,7 @@
                               (cons (make-rope:string
                                   (immutable-substring a-str i))
                                  acc))
-                             rope-append)])))
+                             -rope-append)])))
   
   (define special->rope make-rope:special)
   
@@ -95,9 +95,31 @@
            (rope-has-special? r))]))
   
   
-  ;; rope-append: rope rope -> rope
-  ;; Puts two ropes together.
+  (define current-max-depth-before-rebalancing
+    (make-parameter 32))
+  
+  ;; rebalance-if-too-deep: rope -> rope
+  ;; Automatically rebalance the rope if the depth is beyond
+  ;; the requested threshold.
+  (define (rebalance-if-too-deep a-rope)
+    (cond
+      [(< (rope-depth a-rope)
+          (current-max-depth-before-rebalancing))
+       a-rope]
+      [else
+       (rope-balance a-rope)]))
+  
+  
+  ;; -rope-append: rope rope -> rope
+  ;; Puts two ropes together; if the rope depth is bad enough,
+  ;; call rope-balance implicitly.
   (define (rope-append rope-1 rope-2)
+    (rebalance-if-too-deep (-rope-append rope-1 rope-2)))
+  
+  
+  ;; -rope-append: rope rope -> rope
+  ;; Puts two ropes together.
+  (define (-rope-append rope-1 rope-2)
     (local ((define (make-default-concat r1 r2)
               (cond
                 [(= 0 (rope-length r1))
@@ -161,7 +183,8 @@
   ;; rope-append*: rope* -> rope
   ;; Appends a sequence of ropes into a single rope.
   (define (rope-append* . some-ropes)
-    (simple-join-forest (cons rope-empty some-ropes) rope-append))
+    (rebalance-if-too-deep
+     (simple-join-forest (cons rope-empty some-ropes) -rope-append)))
   
   
   ;; rope-ref: rope number -> character
@@ -223,7 +246,7 @@
                                     (max 0 (- start length-of-rope-1))
                                     (max 0 (- end
                                               length-of-rope-1)))])))
-                   (rope-append left right))]))
+                   (-rope-append left right))]))
             
             (define (clamp x low high)
               (min (max x low) high)))
@@ -390,7 +413,7 @@
   (define (rope-balance a-rope)
     (fib-join-forest (reverse
                       (rope-fold/leaves cons '() a-rope))
-                     rope-append
+                     -rope-append
                      rope-depth))
   
   
@@ -417,12 +440,12 @@
              acc]
             [(char? (vector-ref a-vec i))
              (loop (add1 i)
-                   (rope-append
+                   (-rope-append
                     acc
                     (string->rope (string (vector-ref a-vec i)))))]
             [else
              (loop (add1 i)
-                   (rope-append
+                   (-rope-append
                     acc
                     (special->rope (vector-ref a-vec i))))])))
   
@@ -462,7 +485,7 @@
      (rope-fold/leaves (lambda (string/special acc)
                          (match string/special
                            [(struct rope:string (s))
-                            (rope-append acc string/special)]
+                            (-rope-append acc string/special)]
                            [(struct rope:special (s))
                             acc]))
                        rope-empty
