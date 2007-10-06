@@ -478,20 +478,6 @@
                 (rope-node-count r)))]))
   
   
-  ;; rope-string/erasing-specials: rope->string
-  ;; Like rope->string, but removes specials from the output.
-  (define (rope->string/erasing-specials a-rope)
-    (rope->string
-     (rope-fold/leaves (lambda (string/special acc)
-                         (match string/special
-                           [(struct rope:string (s))
-                            (-rope-append acc string/special)]
-                           [(struct rope:special (s))
-                            acc]))
-                       rope-empty
-                       a-rope)))
-  
-  
   ;; Here are our exposed functions:
   
   (provide current-optimize-flat-ropes)
@@ -508,7 +494,6 @@
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]
    
-   [rope->string/erasing-specials (rope? . -> . string?)]
    [rope-append (rope? rope? . -> . rope?)]
    [rope-append* (() (listof rope?) . ->* . (rope?))]
    [rope-has-special? (rope? . -> . boolean?)]
