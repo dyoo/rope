@@ -18,7 +18,7 @@ Plauss.  This library also allows special values to be part of a rope.
 Example
 =======
 
-     > (require (planet "rope.ss" ("dyoo" "rope.plt" 2)))
+     > (require (planet "rope.ss" ("dyoo" "rope.plt" 3)))
      > (define a-rope
          (rope-append 
           (string->rope 
@@ -135,8 +135,8 @@ the rope.
 
 > rope-fold/leaves: (immutable-string-or-special X) X rope -> X
 
-Folds an accumulating function across every string or special in the
-rope.
+Folds an accumulating function across every rope:string or rope:special
+node in the rope.
 
 
 > open-input-rope: rope -> input-port

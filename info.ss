@@ -1,12 +1,13 @@
 (module info (lib "infotab.ss" "setup")
   (define name "rope")
   (define blurb '("Ropes for fast string concatenation and subsequencing"))
-  (define release-notes '((p "Version 2.3: improved implementation of open-input-rope.  Fixed silly
-bug involving subrope and specials.")))
+  (define release-notes '((p "Version 3.0: a few backwards-incompatible API changes.")
+                          (ul
+                           (li "rope-fold/leaves no longer unboxes the leaf before passing to the accumulator function."))))
   (define categories '(datastructures))
   (define homepage "http://hashcollision.org/")
   (define can-be-loaded-with 'all)
-  (define version "2.3")
+  (define version "3.0")
   (define doc.txt "doc.txt")
   (define primary-file "rope.ss"))
 

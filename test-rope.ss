@@ -92,7 +92,7 @@
       "rope-fold/leaves"
       (parameterize ([current-optimize-flat-ropes #f])
         (check-equal? (rope-fold/leaves (lambda (a-str acc)
-                                          (cons a-str acc))
+                                          (cons (rope:string-s a-str) acc))
                                         '()
                                         (++ (sr "hello") (sr "world")))
                       (list "world" "hello"))))

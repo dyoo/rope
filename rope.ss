@@ -5,6 +5,7 @@
            (lib "contract.ss")
            (lib "list.ss")
            (only (lib "13.ss" "srfi") string-fold)
+           (planet "join-forest.ss" ("dyoo" "join-forest.plt" 1 0))
            "immutable-string.ss")
   
   ;; Quick and dirty library implementing ropes, closely following
@@ -136,11 +137,7 @@
   ;; rope-append*: rope* -> rope
   ;; Appends a sequence of ropes into a single rope.
   (define (rope-append* . some-ropes)
-    ;; fixme; try to do it in an order that keeps things balanced.
-    (foldl (lambda (x acc)
-             (rope-append acc x))
-           rope-empty
-           some-ropes))
+    (simple-join-forest (cons rope-empty some-ropes) rope-append))
   
   
   ;; rope-ref: rope number -> character
@@ -326,13 +323,15 @@
        (rope-fold f (rope-fold f acc l) r)]))
   
   
-  ;; rope-fold/leaves: (string/special X -> X) X rope -> X
+  ;; rope-fold/leaves: (rope:leaf X -> X) X rope -> X
+  ;; Recent api change 3.0: this no longer unboxes the structure
+  ;; before calling the function on the rope.
   (define (rope-fold/leaves f acc a-rope)
     (match a-rope
       [(struct rope:string (s))
-       (f s acc)]
+       (f a-rope acc)]
       [(struct rope:special (s))
-       (f s acc)]
+       (f a-rope acc)]
       [(struct rope:concat (l r len))
        (rope-fold/leaves f (rope-fold/leaves f acc l) r)]))
   
@@ -348,12 +347,12 @@
        (local ((define-values (inp outp)
                  (make-pipe-with-specials)))
          (rope-fold/leaves (lambda (string/special _)
-                             (cond
-                               [(string? string/special)
-                                (when (> (string-length string/special) 0)
-                                  (display string/special outp))]
-                               [else
-                                (write-special string/special outp)]))
+                             (match string/special
+                               [(struct rope:string (s))
+                                (when (> (string-length s) 0)
+                                  (display s outp))]
+                               [(struct rope:special (s))
+                                (write-special s outp)]))
                            #f
                            a-rope)
          (close-output-port outp)
@@ -367,27 +366,22 @@
   ;; in the paper.
   (define (rope-balance a-rope)
     (local ((define (add-leaf-to-forest a-leaf a-forest)
-              (local ((define leaf-node
-                        (cond [(string? a-leaf)
-                               (make-rope:string a-leaf)]
-                              [else
-                               (make-rope:special a-leaf)])))
-                (cond
-                  [(empty? a-forest)
-                   (list leaf-node)]
-                  [(< (rope-length leaf-node)
-                      (rope-length (first a-forest)))
-                   (cons leaf-node a-forest)]
-                  [else
-                   (local
-                       ((define partial-forest
-                          (merge-smaller-children
-                           a-forest
-                           (rope-length leaf-node))))
-                     (restore-forest-order
-                      (cons (rope-append (first partial-forest)
-                                         leaf-node)
-                            (rest partial-forest))))])))
+              (cond
+                [(empty? a-forest)
+                 (list a-leaf)]
+                [(< (rope-length a-leaf)
+                    (rope-length (first a-forest)))
+                 (cons a-leaf a-forest)]
+                [else
+                 (local
+                     ((define partial-forest
+                        (merge-smaller-children
+                         a-forest
+                         (rope-length a-leaf))))
+                   (restore-forest-order
+                    (cons (rope-append (first partial-forest)
+                                       a-leaf)
+                          (rest partial-forest))))]))
             
             (define (merge-smaller-children a-forest n)
               (cond
@@ -487,6 +481,20 @@
                 (rope-node-count r)))]))
   
   
+  ;; rope-string/erasing-specials: rope->string
+  ;; Like rope->string, but removes specials from the output.
+  (define (rope->string/erasing-specials a-rope)
+    (rope->string
+     (rope-fold/leaves (lambda (string/special acc)
+                         (match string/special
+                           [(struct rope:string (s))
+                            (rope-append acc string/special)]
+                           [(struct rope:special (s))
+                            acc]))
+                       rope-empty
+                       a-rope)))
+  
+  
   ;; Here are our exposed functions:
   
   (provide current-optimize-flat-ropes)
@@ -501,6 +509,8 @@
    
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]
+   
+   [rope->string/erasing-specials (rope? . -> . string?)]
    [rope-append (rope? rope? . -> . rope?)]
    [rope-append* (() (listof rope?) . ->* . (rope?))]
    [rope-has-special? (rope? . -> . boolean?)]
@@ -520,7 +530,7 @@
    
    [rope-for-each ((any/c . -> . any) rope? . -> . any)]
    [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]
-   [rope-fold/leaves ((any/c any/c . -> . any) any/c rope? . -> . any)]
+   [rope-fold/leaves ((rope? any/c . -> . any) any/c rope? . -> . any)]
    
    [open-input-rope (rope? . -> . input-port?)]
    
