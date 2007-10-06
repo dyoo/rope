@@ -182,9 +182,9 @@ do structured traversal over the nodes of a rope.
 
     where s is not a string.
 
-> (define-struct (rope:concat rope) (l r len))
+> (define-struct (rope:concat rope) (l r len depth))
 
-    where l and r are ropes, and len is a natural number.
+    where l and r are ropes, and len and depth are natural numbers.
 
 
 
@@ -202,6 +202,12 @@ All operations are done without mutation.
 
 Recent changes
 ==============
+
+Version 3.1: major API changes.
+
+    * (fill me in: add additional functions)
+    * rope-fold/leaves
+    * rope:concat has an additional field 'depth'
 
 Version 2.3: improved implementation of open-input-rope.  Fixed silly
 bug involving subrope and specials.

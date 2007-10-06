@@ -24,7 +24,7 @@
   (define-struct rope ())
   (define-struct (rope:string rope) (s))
   (define-struct (rope:special rope) (s))
-  (define-struct (rope:concat rope) (l r len))
+  (define-struct (rope:concat rope) (l r len depth))
   
   ;; A leaf-node is considered to be a string-node or special-node.
   
@@ -54,19 +54,22 @@
   ;; string->rope: string -> rope
   ;; Given a string, returns a rope.
   (define (string->rope a-str)
-    (rope-balance
-     (let loop ([i 0])
-       (cond
-         [(< (+ i cutoff-before-concat-node-use)
-             (string-length a-str))
-          (rope-append
-           (make-rope:string
-            (immutable-substring
-             a-str i (+ i cutoff-before-concat-node-use)))
-           (loop (+ i cutoff-before-concat-node-use)))]
-         [else
-          (make-rope:string
-           (immutable-substring a-str i))]))))
+    (let loop ([i 0]
+               [acc '()])
+      (cond
+        [(< (+ i cutoff-before-concat-node-use)
+            (string-length a-str))
+         (loop (+ i cutoff-before-concat-node-use)
+               (cons (make-rope:string
+                      (immutable-substring
+                       a-str i (+ i cutoff-before-concat-node-use)))
+                     acc))]
+        [else
+         (simple-join-forest (reverse
+                              (cons (make-rope:string
+                                  (immutable-substring a-str i))
+                                 acc))
+                             rope-append)])))
   
   (define special->rope make-rope:special)
   
@@ -78,7 +81,7 @@
        (string-length s)]
       [(struct rope:special (s))
        1]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        len]))
   
   ;; rope-has-special? rope -> boolean
@@ -87,7 +90,7 @@
     (match a-rope
       [(struct rope:string (s)) #f]
       [(struct rope:special (s)) #t]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        (or (rope-has-special? l)
            (rope-has-special? r))]))
   
@@ -95,17 +98,18 @@
   ;; rope-append: rope rope -> rope
   ;; Puts two ropes together.
   (define (rope-append rope-1 rope-2)
-    (local ((define l1 (rope-length rope-1))
-            (define l2 (rope-length rope-2))
-            (define (make-default-concat r1 r2)
+    (local ((define (make-default-concat r1 r2)
               (cond
                 [(= 0 (rope-length r1))
-                 rope-2]
+                 r2]
                 [(= 0 (rope-length r2))
-                 rope-1]
+                 r1]
                 [else
-                 (make-rope:concat r1 r2 (+ (rope-length r1)
-                                            (rope-length r2)))])))
+                 (make-rope:concat r1 r2
+                                   (+ (rope-length r1)
+                                      (rope-length r2))
+                                   (add1 (max (rope-depth r1)
+                                              (rope-depth r2))))])))
       (match (list rope-1 rope-2)
         [(list (struct rope:string (s1))
                (struct rope:string (s2)))
@@ -118,17 +122,37 @@
         [(list (struct rope:concat
                        (left-rope
                         (struct rope:string (s1))
-                        len))
+                        len
+                        depth))
                (struct rope:string (s2)))
          (cond
            [(below-flat-collapsing-cutoff? s1 s2)
             (make-rope:concat
              left-rope
              (make-rope:string (immutable-string-append s1 s2))
-             (+ l1 l2))]
+             (+ (rope-length rope-1) (rope-length rope-2))
+             (add1 (rope-depth left-rope)))]
            
            [else
             (make-default-concat rope-1 rope-2)])]
+        
+        [(list (struct rope:string (s1))
+               (struct rope:concat
+                       ((struct rope:string (s2))
+                        right-rope
+                        len
+                        depth)))
+         (cond
+           [(below-flat-collapsing-cutoff? s1 s2)
+            (make-rope:concat
+             (make-rope:string (immutable-string-append s1 s2))
+             right-rope
+             (+ (rope-length rope-1) (rope-length rope-2))
+             (add1 (rope-depth right-rope)))]
+           
+           [else
+            (make-default-concat rope-1 rope-2)])]
+        
         
         [else
          (make-default-concat rope-1 rope-2)])))
@@ -148,7 +172,7 @@
        (string-ref s index)]
       [(struct rope:special (s))
        s]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        (local ((define l-length (rope-length l)))
          (cond
            [(< index l-length)
@@ -173,7 +197,7 @@
                        [else
                         a-rope])]
                 
-                [(struct rope:concat (rope-1 rope-2 len))
+                [(struct rope:concat (rope-1 rope-2 len depth))
                  (local
                      ((define length-of-rope-1 (rope-length rope-1))
                       (define left
@@ -241,7 +265,7 @@
           #f]
          
          [(list (struct rope:string (s1))
-                (struct rope:concat (l2 r2 len2)))
+                (struct rope:concat (l2 r2 len2 depth2)))
           (let/ec return
             (= len2
                (rope-fold (lambda (ch/special i)
@@ -264,20 +288,20 @@
           (eq? s1 s2)]
          
          [(list (struct rope:special (s1))
-                (struct rope:concat (l2 r2 len2)))
+                (struct rope:concat (l2 r2 len2 depth2)))
           (or (rope=? rope-1 l2)
               (rope=? rope-1 r2))]
          
-         [(list (struct rope:concat (l1 r1 len1))
+         [(list (struct rope:concat (l1 r1 len1 depth1))
                 (struct rope:string (s2)))
           (rope=? rope-2 rope-1)]
          
-         [(list (struct rope:concat (l1 r1 len1))
+         [(list (struct rope:concat (l1 r1 len1 depth1))
                 (struct rope:special (s2)))
           (rope=? rope-2 rope-1)]
          
-         [(list (struct rope:concat (l1 r1 len1))
-                (struct rope:concat (l2 r2 len2)))
+         [(list (struct rope:concat (l1 r1 len1 depth1))
+                (struct rope:concat (l2 r2 len2 depth2)))
           (cond [(= (rope-length l1) (rope-length l2))
                  (and (rope=? l1 l2)
                       (rope=? r1 r2))]
@@ -299,7 +323,7 @@
            (+ i (string-length s))]
           [(struct rope:special (s))
            (error 'rope->string "rope contains special ~s" s)]
-          [(struct rope:concat (l r len))
+          [(struct rope:concat (l r len depth))
            (loop! r (loop! l i))]))
       target))
   
@@ -319,7 +343,7 @@
        (string-fold f acc s)]
       [(struct rope:special (s))
        (f s acc)]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        (rope-fold f (rope-fold f acc l) r)]))
   
   
@@ -332,7 +356,7 @@
        (f a-rope acc)]
       [(struct rope:special (s))
        (f a-rope acc)]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        (rope-fold/leaves f (rope-fold/leaves f acc l) r)]))
   
   
@@ -362,61 +386,12 @@
   
   
   ;; rope-balance: rope -> rope
-  ;; A fast-and-loose adaptation of the balancing algorithm described
-  ;; in the paper.
+  ;; Reconcatenate the leaves of the rope.
   (define (rope-balance a-rope)
-    (local ((define (add-leaf-to-forest a-leaf a-forest)
-              (cond
-                [(empty? a-forest)
-                 (list a-leaf)]
-                [(< (rope-length a-leaf)
-                    (rope-length (first a-forest)))
-                 (cons a-leaf a-forest)]
-                [else
-                 (local
-                     ((define partial-forest
-                        (merge-smaller-children
-                         a-forest
-                         (rope-length a-leaf))))
-                   (restore-forest-order
-                    (cons (rope-append (first partial-forest)
-                                       a-leaf)
-                          (rest partial-forest))))]))
-            
-            (define (merge-smaller-children a-forest n)
-              (cond
-                [(empty? (rest a-forest))
-                 a-forest]
-                [(<= (rope-length (first a-forest)) n)
-                 a-forest]
-                [else
-                 (merge-smaller-children
-                  (cons (rope-append (second a-forest) (first a-forest))
-                        (rest (rest a-forest)))
-                  n)]))
-            
-            (define (restore-forest-order a-forest)
-              (cond
-                [(empty? (rest a-forest))
-                 a-forest]
-                [(>= (rope-length (first a-forest))
-                     (rope-length (second a-forest)))
-                 (restore-forest-order
-                  (cons (rope-append (second a-forest) (first a-forest))
-                        (rest (rest a-forest))))]
-                [else
-                 a-forest]))
-            
-            (define (concatenate-forest a-forest)
-              (cond
-                [(empty? (rest a-forest))
-                 (first a-forest)]
-                [else
-                 (concatenate-forest
-                  (cons (rope-append (second a-forest) (first a-forest))
-                        (rest (rest a-forest))))])))
-      (concatenate-forest
-       (rope-fold/leaves add-leaf-to-forest '() a-rope))))
+    (fib-join-forest (reverse
+                      (rope-fold/leaves cons '() a-rope))
+                     rope-append
+                     rope-depth))
   
   
   
@@ -461,9 +436,8 @@
        0]
       [(struct rope:special (s))
        0]
-      [(struct rope:concat (l r len))
-       (max (add1 (rope-depth l))
-            (add1 (rope-depth r)))]))
+      [(struct rope:concat (l r len depth))
+       depth]))
   
   
   ;; rope-node-count: rope -> natural-number
@@ -476,7 +450,7 @@
        1]
       [(struct rope:special (s))
        1]
-      [(struct rope:concat (l r len))
+      [(struct rope:concat (l r len depth))
        (add1 (+ (rope-node-count l)
                 (rope-node-count r)))]))
   
@@ -501,11 +475,12 @@
   
   (provide/contract
    [struct rope []]
-   [struct (rope:string rope) [(s string?)]]
-   [struct (rope:special rope) [(s (not/c string?))]]
+   [struct (rope:string rope) [(s (and/c string? immutable?))]]
+   [struct (rope:special rope) [(s any/c)]]
    [struct (rope:concat rope) ((l rope?)
                                (r rope?)
-                               (len natural-number/c))]
+                               (len natural-number/c)
+                               (depth natural-number/c))]
    
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]

@@ -6,7 +6,8 @@
            "rope.ss")
   
   (define (++ x y)
-    (make-rope:concat x y (+ (rope-length x) (rope-length y))))
+    (make-rope:concat x y (+ (rope-length x) (rope-length y))
+                      (add1 (max (rope-depth x) (rope-depth y)))))
   
   
   (define (make-long-degenerate-rope)
