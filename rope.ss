@@ -3,7 +3,7 @@
            (lib "plt-match.ss")
            (lib "port.ss")
            (lib "contract.ss")
-           (lib "list.ss")
+           (lib "lex.ss" "parser-tools")
            (only (lib "13.ss" "srfi") string-fold)
            (planet "join-forest.ss" ("dyoo" "join-forest.plt" 1 0))
            "immutable-string.ss")
@@ -83,6 +83,9 @@
        1]
       [(struct rope:concat (l r len depth))
        len]))
+  
+  
+  
   
   ;; rope-has-special? rope -> boolean
   ;; Returns true if the rope has a special.
@@ -451,6 +454,36 @@
   
   
   
+  ;; input-port->rope: input-port (special -> special) -> rope
+  ;; Returns a rope whose content contains the content of the input port.
+  ;; Specials are preprocessed with handle-special-f before making them
+  ;; rope:special nodes.
+  (define (input-port->rope ip handle-special-f)
+    (local [(define simple-lexer
+              (lexer
+               [(repetition 0 +inf.0 any-char)
+                lexeme]
+               [(special)
+                (box lexeme)]
+               [(eof) eof]))]
+      (lambda (ip handle-special-f)
+        (let loop ([inserted-rope (string->rope "")]
+                   [next-chunk (simple-lexer ip)])
+          (cond
+            [(eof-object? next-chunk)
+             inserted-rope]
+            [(string? next-chunk)
+             (loop (rope-append inserted-rope
+                                (string->rope next-chunk))
+                   (simple-lexer ip))]
+            [(box? next-chunk)
+             (loop (rope-append inserted-rope
+                                (special->rope
+                                 (handle-special-f
+                                  (unbox next-chunk))))
+                   (simple-lexer ip))])))))
+  
+  
   
   ;; rope-depth: rope -> natural-number
   (define (rope-depth a-rope)
@@ -491,6 +524,7 @@
                                (len natural-number/c)
                                (depth natural-number/c))]
    
+   
    [string->rope (string? . -> . rope?)]
    [special->rope ((not/c string?) . -> . rope?)]
    
@@ -509,7 +543,7 @@
    [rope->string (rope? . -> . string?)]
    [rope->vector (rope? . -> . vector?)]
    [vector->rope (vector? . -> . rope?)]
-   
+   [input-port->rope (input-port? (any/c . -> . any) . -> . rope?)]
    
    [rope-for-each ((any/c . -> . any) rope? . -> . any)]
    [rope-fold ((any/c any/c . -> . any) any/c rope? . -> . any)]
