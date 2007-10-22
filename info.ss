@@ -1,9 +1,13 @@
 (module info (lib "infotab.ss" "setup")
   (define name "rope")
   (define blurb '("Ropes for fast string concatenation and subsequencing"))
-  (define release-notes '((p "Version 3.0: a few backwards-incompatible API changes.")
+  (define release-notes '((p "Version 3.0: major API changes.")
                           (ul
-                           (li "rope-fold/leaves no longer unboxes the leaf before passing to the accumulator function."))))
+                           (li "rope-fold/leaves does not automatically unbox the leaf structure.")
+                           (li "added rope-depth, rope-append*, rope=?, rope->vector, vector->rope functions.")
+                           (li "rope:concat has an additional field 'depth'.")
+                           (li "rope-append automatically rebalances a rope if it is too deep."))))
+  
   (define categories '(datastructures))
   (define homepage "http://hashcollision.org/")
   (define can-be-loaded-with 'all)

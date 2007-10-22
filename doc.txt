@@ -4,6 +4,8 @@ Danny Yoo (dyoo@cs.wpi.edu / dyoo@hkn.eecs.berkeley.edu)
 
 Index terms: _ropes_
 
+Version: 3.0
+
 
 Introduction
 ============
@@ -83,7 +85,13 @@ string and a special-as-a-string.
 
 > rope-append: rope rope -> rope
 
-Joins two ropes together in constant time.
+Joins two ropes.
+
+
+> rope-append*: rope* -> rope
+
+Joins multiple ropes together.  The result tries to maintain some
+balance.
 
 
 > rope?: any -> boolean
@@ -101,6 +109,12 @@ Returns true if the rope contains a special node.
 Returns the length of a rope.  Cost is constant time.
 
 
+> rope-depth: rope -> natural-number
+
+Returns the depth of the rope data structure.  Constant time
+operation.
+
+
 > rope-ref: rope natural-number -> char-or-special
 
 Returns the nth character or special in a rope.  Cost is proportional
@@ -115,11 +129,28 @@ then the subrope extends to the end of the rope.  Cost is proportional
 to the rope-depth of the rope.
 
 
+> rope=?: rope rope -> boolean
+
+Returns true if the given ropes have the same content.  Specials are
+compared with eq?.
+
+
 > rope->string: rope -> string
 
 Creates a string from the content in the rope.
 
 Note: if the rope has a special, this function will raise an error.
+
+
+> rope->vector: rope -> (vectorof char-or-special)
+
+Creates a vector of characters and specials from the content in the
+rope.
+
+
+> vector->rope: (vectorof char-or-special) -> rope
+
+Creates a rope from the content of the vector.
 
 
 > rope-for-each: (char-or-special -> void) rope -> void
@@ -133,10 +164,15 @@ Folds an accumulating function across every character or special in
 the rope.
 
 
-> rope-fold/leaves: (immutable-string-or-special X) X rope -> X
+> rope-fold/leaves: (rope:string-or-rope:special X) X rope -> X
 
-Folds an accumulating function across every rope:string or rope:special
-node in the rope.
+Folds an accumulating function across every rope:string or
+rope:special node in the rope.
+
+Note: in version 3, the node leaf structure itself is passed to the
+accumulator function.  In previous versions, the library did an
+automatic unboxing of the value.
+
 
 
 > open-input-rope: rope -> input-port
@@ -145,13 +181,8 @@ Returns an input port whose byte content comes from the rope.
 Specials can be read with read-byte-or-special.
 
 
-Other API functions
-===================
-
-
-> rope-depth: rope -> natural-number
-
-Returns the depth of the rope data structure.
+Other API functions and parameters
+==================================
 
 
 > rope-node-count: rope -> natural-number
@@ -163,6 +194,18 @@ Returns the number of nodes in the rope.
 
 Returns a balanced version of the rope whose rope-depth is roughly
 logarithmic to its rope-node-count.
+
+
+> current-optimize-flat-ropes: (parameterof boolean)
+
+If true, then rope-append calls will try to optimize appends against
+rope:strings if it seems worthwhile.  Default is #t.
+
+
+> current-max-depth-before-rebalancing: (parameterof number)
+
+The maximum depth of a rope before the rope is automatically
+rebalanced.  Default value is 32.
 
 
 
@@ -191,23 +234,27 @@ do structured traversal over the nodes of a rope.
 Notes
 =====
 
-Unlike the description in the paper, this library does not
-automatically rebalance the data structure when applying subrope or
-rope-append.  Explicit rebalancing may improve the performance of
-subsequencing and referencing on the balanced tree.
-
-All operations are done without mutation.
+rope-append will automatically rebalance if the depth of the rope data
+structure crosses a threshold value.  See the
+current-max-depth-before-rebalancing parameter for details.
 
 
 
 Recent changes
 ==============
 
-Version 3.1: major API changes.
+Version 3.0: major API changes.
 
-    * (fill me in: add additional functions)
-    * rope-fold/leaves
-    * rope:concat has an additional field 'depth'
+    * rope-fold/leaves does not automatically unbox the leaf
+      structure.
+
+    * added rope-depth, rope-append*, rope=?, rope->vector,
+      vector->rope functions.
+
+    * rope:concat has an additional field 'depth'.
+
+    * rope-append automatically rebalances a rope if it is too deep.
+
 
 Version 2.3: improved implementation of open-input-rope.  Fixed silly
 bug involving subrope and specials.

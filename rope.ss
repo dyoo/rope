@@ -513,7 +513,8 @@
   
   ;; Here are our exposed functions:
   
-  (provide current-optimize-flat-ropes)
+  (provide current-optimize-flat-ropes
+           current-max-depth-before-rebalancing)
   
   (provide/contract
    [struct rope []]
