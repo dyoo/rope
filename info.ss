@@ -12,6 +12,7 @@
   (define homepage "http://hashcollision.org/")
   (define can-be-loaded-with 'all)
   (define version "3.0")
+  (define compile-omit-paths (list "test"))
   (define doc.txt "doc.txt")
   (define primary-file "rope.ss"))
 

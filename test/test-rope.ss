@@ -1,9 +1,9 @@
 (module test-rope mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2 8))
-           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 8))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2 10))
+           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 10))
            (planet "comprehensions.ss" ("dyoo" "srfi-alias.plt" 1))
            (lib "etc.ss")
-           "rope.ss")
+           "../rope.ss")
   
   (define (++ x y)
     (make-rope:concat x y (+ (rope-length x) (rope-length y))
