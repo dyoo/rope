@@ -5,7 +5,7 @@
            (lib "contract.ss")
            (lib "lex.ss" "parser-tools")
            (only (lib "13.ss" "srfi") string-fold)
-           (planet "join-forest.ss" ("dyoo" "join-forest.plt" 1 0))
+           (planet "join-forest.ss" ("dyoo" "join-forest.plt" 1 2))
            "immutable-string.ss")
   
   ;; Quick and dirty library implementing ropes, closely following
