@@ -5,7 +5,7 @@
          racket/port
          parser-tools/lex
          (planet dyoo/join-forest:1:2/join-forest)
-         "immutable-string.ss")
+         "immutable-string.rkt")
 
 ;; Quick and dirty library implementing ropes, closely following
 ;; the description in: 

@@ -2,7 +2,7 @@
 (require rackunit
          rackunit/text-ui
          racket/local
-         "../rope.ss")
+         "../rope.rkt")
 
 (define (++ x y)
   (make-rope:concat x y (+ (rope-length x) (rope-length y))
